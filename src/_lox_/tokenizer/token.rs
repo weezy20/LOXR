@@ -1,6 +1,6 @@
-use crate::tokenizer::token_type::TokenType;
+use super::token_type::TokenType;
 
-#[derive(Debug, Default, Clone, Copy)]
+// #[derive(Debug, Default, Clone, Copy)]
 pub struct Token {
     token_type: TokenType,
     lexeme: String,

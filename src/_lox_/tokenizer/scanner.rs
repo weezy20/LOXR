@@ -11,7 +11,7 @@ pub struct Scanner {
 
 impl Scanner {
     /// Create a scanner that's ready to be used with scan_tokens
-    pub fn new(source: String) {
+    pub fn new(source: String) -> Self {
         Self {
             source,
             current: 0,
