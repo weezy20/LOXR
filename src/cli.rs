@@ -36,7 +36,7 @@ mod repl {
                 println!("Exiting Lox interpreter");
                 std::process::exit(0);
             }
-            lox_interpreter.run(input);
+            lox_interpreter.run(String::from(input));
             buf.clear();
         }
         Ok(())

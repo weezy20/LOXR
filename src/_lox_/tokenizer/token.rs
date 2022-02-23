@@ -1,8 +1,10 @@
 use super::token_type::TokenType;
 
-// #[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Token {
-    token_type: TokenType,
+    _type: TokenType,
+    /// A Lexeme is a part of valid Lox grammer. Some lexemes can be single char long
+    /// whilst others maybe two or more characters
     lexeme: String,
     literal: Literal,
     line_number: usize,
@@ -11,13 +13,13 @@ pub struct Token {
 impl Token {
     /// Create a new token with type info, value, and line number
     pub fn new(
-        token_type: TokenType,
+        _type: TokenType,
         lexeme: String,
         literal: Literal,
         line_number: usize,
     ) -> Self {
         Self {
-            token_type,
+            _type,
             lexeme,
             literal,
             line_number,
@@ -25,7 +27,7 @@ impl Token {
     }
     /// Returns a string representation of the current Token
     pub fn to_string(&self) -> String {
-        format!("{:?} {} {}", self.token_type, self.lexeme, self.line_number)
+        format!("{:?} {} {}", self._type, self.lexeme, self.line_number)
     }
 }
 
