@@ -17,7 +17,7 @@ pub fn run_cli() {
     }
 }
 pub(in crate::cli) fn run_file(file: &str) {
-    let mut lox = Lox::new();
+    let mut lox = Lox::new(file.into());
     lox.run_file(file.as_ref());
 }
 
@@ -27,7 +27,7 @@ mod repl {
     use std::{io, io::Write};
     #[allow(unreachable_code)]
     pub(crate) fn start_repl() -> std::io::Result<()> {
-        let mut lox_interpreter = Lox::new();
+        let mut lox_interpreter = Lox::new(Default::default());
         let mut buf = String::new();
         loop {
             print_prompt(&mut buf)?;

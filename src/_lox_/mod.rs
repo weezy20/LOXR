@@ -3,5 +3,5 @@
 /// Machinery for running a Lox file or Lox interpreter
 pub mod lox;
 
-/// A module for token definitions, and a lox lexer
+/// A module for token definitions, and a lox lexer and scanner
 pub mod tokenizer;
