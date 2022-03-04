@@ -1,8 +1,8 @@
 //! The purpose of this file is to define a scanner that takes a string and tokenizes it
 
-use std::str::CharIndices;
-
 use crate::_lox_::lox::Lox;
+use std::iter::Peekable;
+use std::str::CharIndices;
 
 use super::{token::Token, token_type::TokenType};
 #[derive(Debug)]
@@ -10,7 +10,7 @@ pub struct Scanner<'a: 'b, 'b> {
     /// Source string to tokenize
     source: &'a str,
     /// Iterator over source characters
-    chars: CharIndices<'a>,
+    chars: Peekable<CharIndices<'a>>,
     /// Offset from start of source
     current: usize,
     /// Points to the first character of the current lexeme under consideration
@@ -26,7 +26,7 @@ pub struct Scanner<'a: 'b, 'b> {
 impl<'a, 'b> Scanner<'a, 'b> {
     /// Create a scanner that's ready to be used with scan_tokens
     pub fn new(source: &'a str, lox: &'b mut Lox) -> Self {
-        let char_indices = source.char_indices();
+        let char_indices = source.char_indices().peekable();
         Self {
             source,
             lox,
@@ -54,6 +54,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
         self.current >= self.source.len()
     }
     /// Consume the iterator, increment `current` offset and return the next char, returns "" if nothing left
+    /// If line breaks encountered, incremenet line number
     fn advance(&mut self) -> Option<char> {
         if let Some((_pos, next_char)) = self.chars.next() {
             self.current += 1;
@@ -65,6 +66,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
             None
         }
     }
+    /// create a new TokenType with the piece of text from source and push it to tokens list
     fn add_token(&mut self, r#type: TokenType) {
         let lexeme_text = &self.source[self.start..self.current + 1];
         self.tokens
@@ -85,9 +87,52 @@ impl<'a, 'b> Scanner<'a, 'b> {
             '*' => self.add_token(TokenType::STAR),
             '/' => self.add_token(TokenType::SLASH),
             ';' => self.add_token(TokenType::SEMICOLON),
+            ' ' => {} // Ignore whitespace , for now.
+            // Single or Double character lexemes: !, !=, <, <=, >, >=
+            '!' => {
+                // ! are a part of a lexeme "!=" just like "<=" or ">="
+                if self.next_match('=') {
+                    self.add_token(TokenType::BANG_EQUAL);
+                } else {
+                    self.add_token(TokenType::BANG);
+                }
+            }
+            '<' => {
+                if self.next_match('=') {
+                    self.add_token(TokenType::LESS_EQUAL);
+                } else {
+                    self.add_token(TokenType::LESS);
+                }
+            }
+            '>' => {
+                if self.next_match('=') {
+                    self.add_token(TokenType::GREATER_EQUAL);
+                } else {
+                    self.add_token(TokenType::GREATER);
+                }
+            }
             _ => self.lox.had_error = true, // Notify the lox machine that error has encountered so we can ignore running the file
                                             // however we must continue scanning tokens
         }
+        self.start = self.current; // set start to the beginning of next lexeme;
         Default::default()
+    }
+    /// Check if the very next character is equal to parameter
+    fn next_match(&mut self, expected: char) -> bool {
+        if self.is_at_end() {
+            return false;
+        }
+        if let Some(&(_, next_ch)) = self.chars.peek() {
+            if next_ch == expected {
+                // Only advance "current" if the next char is what we expected
+                self.current += 1;
+                self.chars.next(); // Also advance our iterator to keep up with `current`
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            false
+        }
     }
 }

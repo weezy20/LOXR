@@ -1,3 +1,4 @@
+#![allow(unused)]
 use super::token_type::TokenType;
 
 #[derive(Debug, Clone)]
@@ -31,6 +32,3 @@ impl Token {
         format!("{:?} {} {}", self.r#type, self.lexeme, self.line_number)
     }
 }
-
-// #[derive(Debug, Default, Clone, Copy)]
-// pub struct Literal;
