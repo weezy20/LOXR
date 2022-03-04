@@ -8,7 +8,7 @@ use super::{token::Token, token_type::TokenType};
 #[derive(Debug)]
 pub struct Scanner<'a: 'b, 'b> {
     /// Source string to tokenize
-    source: &'a str,
+    pub(crate) source: &'a str,
     /// Iterator over source characters
     chars: Peekable<CharIndices<'a>>,
     /// Offset from start of source
@@ -18,9 +18,9 @@ pub struct Scanner<'a: 'b, 'b> {
     /// Line number in source string, starts with 1
     line: usize,
     /// A list of all tokens
-    tokens: Vec<Token>,
+    pub(crate) tokens: Vec<Token>,
     /// Pointer to our Lox instance
-    lox: &'b mut Lox,
+    pub(crate) lox: &'b mut Lox,
 }
 
 impl<'a, 'b> Scanner<'a, 'b> {
@@ -68,7 +68,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
     }
     /// create a new TokenType with the piece of text from source and push it to tokens list
     fn add_token(&mut self, r#type: TokenType) {
-        let lexeme_text = &self.source[self.start..self.current + 1];
+        let lexeme_text = &self.source[self.start..self.current];
         self.tokens
             .push(Token::new(r#type, lexeme_text.into(), self.line))
     }
@@ -85,7 +85,6 @@ impl<'a, 'b> Scanner<'a, 'b> {
             '-' => self.add_token(TokenType::MINUS),
             '+' => self.add_token(TokenType::PLUS),
             '*' => self.add_token(TokenType::STAR),
-            '/' => self.add_token(TokenType::SLASH),
             ';' => self.add_token(TokenType::SEMICOLON),
             ' ' => {} // Ignore whitespace , for now.
             // Single or Double character lexemes: !, !=, <, <=, >, >=
@@ -111,8 +110,23 @@ impl<'a, 'b> Scanner<'a, 'b> {
                     self.add_token(TokenType::GREATER);
                 }
             }
-            _ => self.lox.had_error = true, // Notify the lox machine that error has encountered so we can ignore running the file
-                                            // however we must continue scanning tokens
+            '/' => {
+                // Either a comment start or a division operator
+                if self.next_match('/') {
+                    // We ignore everything till line end or source end whichever comes first
+                    let comment_line = self.line;
+                    while !self.is_at_end() && comment_line < self.line {
+                        self.advance();
+                    }
+                } else {
+                    self.add_token(TokenType::SLASH);
+                }
+            }
+            _ => {
+                self.lox.had_error = true; // Notify the lox machine that error has encountered so we can ignore running the file
+                                           // however we must continue scanning tokens
+                Lox::report_err(self.line, "Unexpected character".into());
+            }
         }
         self.start = self.current; // set start to the beginning of next lexeme;
         Default::default()

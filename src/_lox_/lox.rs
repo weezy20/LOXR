@@ -18,14 +18,16 @@ impl Lox {
     /// Scan a file, parse it into tokens and construct an AST using Lox grammer, then run it
     pub fn run_file(&mut self, file: &std::path::Path) {
         // todo! : refactor this code to check if lox instance already has a source
-        let lox_file =
-            std::fs::read_to_string(file).expect("Cannot open file path {file:?}");
+        let lox_file = std::fs::read_to_string(file).expect("Cannot open file path {file:?}");
         self.run(lox_file);
     }
     /// Parse a `lox` string as `lox` tokens and run them
     pub fn run(&mut self, src: String) {
         let mut scanner = Scanner::new(&src, self);
         scanner.scan_tokens();
+        let tokens = scanner.tokens;
+        dbg!(tokens);
+        return;
         todo!(
             "
             let tokens = scanner.tokens;
@@ -38,6 +40,6 @@ impl Lox {
 
     /// Report `message` as error on `line`
     pub fn report_err(line: usize, message: String) {
-        eprintln!("Error: {message} at line {line}");
+        eprintln!("Syntax Error: {message} at line {line}");
     }
 }
