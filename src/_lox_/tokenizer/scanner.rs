@@ -36,7 +36,7 @@ pub struct Scanner<'a: 'b, 'b> {
     /// Iterator over source characters
     chars: Peekable<CharIndices<'a>>,
     /// Offset from start of source
-    current: usize,
+    pub(crate) current: usize,
     /// Points to the first character of the current lexeme under consideration
     start: usize,
     /// Line number in source string, starts with 1
@@ -267,24 +267,25 @@ impl<'a, 'b> Scanner<'a, 'b> {
     /// Scan as number
     fn scan_number(&mut self, col: usize) {
         let mut decimal_set = false;
-        let mut err = false;
-        while let Some(c) = self.advance() {
+
+        // Note this loop body won't execute if peek() returns None as in case of EOF
+        while let Some(c) = self.peek() {
             if c.is_ascii_digit() {
+                self.advance();
                 continue;
             }
             if c == '.' && !decimal_set {
                 decimal_set = true;
+                self.advance();
                 continue;
             }
+            // Signifies end of number. Also catches double decimal points
+            // Therefore breaks the loop on both syntax errors and legitimate syntax
             if !c.is_ascii_digit() {
                 break;
             }
         }
-        // self.current sits on possibly NaN or EOF so we take 1 away, which means self.current points to start
-        // of next lexeme whatever it is. This point is crucial
-        let ref lexeme = self.source[self.start..self.current -1 ];
-        self.tokens
-            .push(Token::new(TokenType::NUMBER, lexeme.into(), self.line, col));
+        self.add_token_col(TokenType::NUMBER, col);
 
         // We know numbers are never followed by alphabets, yet they maybe followed my math ops or maybe another decimal?
         if let Some(c) = self.peek() {
@@ -292,7 +293,10 @@ impl<'a, 'b> Scanner<'a, 'b> {
                 self.lox.had_error = true;
                 Lox::report_err(
                     self.line,
-                    format!("Unexpected character at numeric boundary"),
+                    format!(
+                        "Unexpected character '{c}' at numeric boundary for {}",
+                        &self.source[self.start..self.current]
+                    ),
                     self.col,
                 );
             }
