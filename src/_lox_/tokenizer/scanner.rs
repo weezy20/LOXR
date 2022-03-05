@@ -146,6 +146,13 @@ impl<'a, 'b> Scanner<'a, 'b> {
                     self.add_token(TokenType::SLASH);
                 }
             }
+            '=' => {
+                if self.next_match('=') {
+                    self.add_token(TokenType::EQUAL_EQUAL);
+                } else {
+                    self.add_token(TokenType::EQUAL);
+                }
+            }
             // String literal
             '"' => {
                 // Save column number for adding string token type
@@ -218,7 +225,6 @@ impl<'a, 'b> Scanner<'a, 'b> {
         let (start, mut end) = (self.start, self.current);
         while let Some(maybe_digit_or_dec) = self.advance() {
             // Number parsing logic
-            println!("Number {number}");
             // if NaN or decimal check if `number` is well formed
             // Executes when number parsing is complete
             if !maybe_digit_or_dec.is_ascii_digit() && maybe_digit_or_dec != '.'
