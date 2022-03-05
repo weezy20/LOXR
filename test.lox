@@ -1,6 +1,6 @@
 !*+-/= = = +=<> <
 // This is a comment
-
+hello = 4
 - + -- ' 
 "hi this is a string" -
 
@@ -11,3 +11,6 @@
 123.64 "hey jude"
 
 45
+
+// keyword keyword ident
+and or not_a_keyword

@@ -1,9 +1,33 @@
 //! The purpose of this file is to define a scanner that takes a string and tokenizes it
 
 use crate::_lox_::lox::Lox;
-use core::num;
+use lazy_static::lazy_static;
+use std::collections::HashMap;
 use std::iter::Peekable;
 use std::str::CharIndices;
+use TokenType::*;
+lazy_static! {
+    static ref KEYWORDS: HashMap<&'static str, TokenType> = {
+        let mut h = HashMap::new();
+        h.insert("and", AND);
+        h.insert("class", CLASS);
+        h.insert("else", ELSE);
+        h.insert("false", FALSE);
+        h.insert("for", FOR);
+        h.insert("fun", FUN);
+        h.insert("if", IF);
+        h.insert("nil", NIL);
+        h.insert("or", OR);
+        h.insert("print", PRINT);
+        h.insert("return", RETURN);
+        h.insert("super", SUPER);
+        h.insert("this", THIS);
+        h.insert("true", TRUE);
+        h.insert("var", VAR);
+        h.insert("while", WHILE);
+        h
+    };
+}
 
 use super::{token::Token, token_type::TokenType};
 #[derive(Debug)]
@@ -93,6 +117,12 @@ impl<'a, 'b> Scanner<'a, 'b> {
         self.tokens
             .push(Token::new(r#type, lexeme_text.into(), self.line, self.col));
     }
+    /// Just the same but with adjusted column number for multi-char lexemes
+    fn add_token_col(&mut self, r#type: TokenType, col: usize) {
+        let lexeme_text = &self.source[self.start..self.current];
+        self.tokens
+            .push(Token::new(r#type, lexeme_text.into(), self.line, col));
+    }
     fn scan_single_token(&mut self) -> Option<Token> {
         let c = self.advance()?;
         match c {
@@ -156,15 +186,20 @@ impl<'a, 'b> Scanner<'a, 'b> {
             // String literal
             '"' => {
                 // Save column number for adding string token type
-                let current = self.col;
-                self.scan_string(current);
+                let col = self.col;
+                self.scan_string(col);
             }
             // Scan for a Number literal
             c if c.is_ascii_digit() => {
                 // Numbers start with digit, negative numbers don't, instead -123 is to be read as an expression
                 // applying -* to 123
-                let current = self.col;
-                self.scan_number(current);
+                let col = self.col;
+                self.scan_number(col);
+            }
+            // Identifiers and KEYWORDS
+            c if c == '_' || c.is_ascii_alphabetic() => {
+                let col = self.col;
+                self.identifier(col);
             }
             unexpected => {
                 self.lox.had_error = true; // Notify the lox machine that error has encountered so we can ignore running the file
@@ -199,6 +234,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
             false
         }
     }
+
     /// Scan as string, upto next `"`, omitting start and end `"`
     fn scan_string(&mut self, string_col_start: usize) {
         while let Some(char) = self.advance() {
@@ -247,7 +283,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
                         TokenType::NUMBER,
                         lexeme.into(),
                         self.line,
-                        self.col,
+                        number_col_start,
                     ));
                     return;
                 } else {
@@ -291,6 +327,22 @@ impl<'a, 'b> Scanner<'a, 'b> {
             } else {
                 well_formed = false;
             }
+        }
+    }
+    fn identifier(&mut self, col: usize) {
+        let mut next_char = self.peek();
+        while matches!(next_char, Some(c) if c.is_ascii_alphanumeric() || c == '_') {
+            // Yes that means you can have variables idents like ___ and __
+            self.advance();
+            next_char = self.peek();
+        }
+        let ref ident_or_keyword = self.source[self.start..self.current];
+
+        // Check if it's an identifier or a keyword
+        if let Some(is_keyword) = KEYWORDS.get(ident_or_keyword) {
+            self.add_token_col(*is_keyword, col);
+        } else {
+            self.add_token_col(TokenType::IDENTIFIER, col);
         }
     }
 }
