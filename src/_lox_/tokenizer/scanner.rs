@@ -18,7 +18,6 @@ lazy_static! {
         h.insert("if", IF);
         h.insert("nil", NIL);
         h.insert("or", OR);
-        h.insert("print", PRINT);
         h.insert("return", RETURN);
         h.insert("super", SUPER);
         h.insert("this", THIS);
@@ -83,6 +82,17 @@ impl<'a, 'b> Scanner<'a, 'b> {
     }
     /// Peek at next char
     fn peek(&mut self) -> Option<char> {
+        if self.is_at_end() {
+            return None;
+        }
+        if let Some((_, char)) = self.chars.peek() {
+            Some(*char)
+        } else {
+            None
+        }
+    }
+    /// Double peek
+    fn peek_next(&mut self) -> Option<char> {
         if self.is_at_end() {
             return None;
         }
@@ -255,77 +265,36 @@ impl<'a, 'b> Scanner<'a, 'b> {
         }
     }
     /// Scan as number
-    fn scan_number(&mut self, number_col_start: usize) {
-        let mut number = String::from(&self.source[self.start..self.current]);
-        let (mut well_formed, mut decimal_set) = (true, false);
-        let (start, mut end) = (self.start, self.current);
-        while let Some(maybe_digit_or_dec) = self.advance() {
-            // Number parsing logic
-            // if NaN or decimal check if `number` is well formed
-            // Executes when number parsing is complete
-            if !maybe_digit_or_dec.is_ascii_digit() && maybe_digit_or_dec != '.'
-                || self.is_at_end()
-            {
-                // Break loop when number is well formed
-                if well_formed {
-                    // self.current is supposed to point at a NaN here, so we remove that from our lexeme
-
-                    // This is necessary if the number is at the end of source, to include the eof index
-                    // in our number lexeme. Otherwise, this position would point to the start of the next lexeme
-                    // or whitespace and therefore must be excluded from our number lexeme
-                    end = if self.is_at_end() {
-                        self.source.len()
-                    } else {
-                        self.current - 1
-                    };
-                    let ref lexeme = self.source[start..end];
-                    self.tokens.push(Token::new(
-                        TokenType::NUMBER,
-                        lexeme.into(),
-                        self.line,
-                        number_col_start,
-                    ));
-                    return;
-                } else {
-                    let invalid = &self.source[self.start..self.current];
-                    self.lox.had_error = true;
-                    Lox::report_err(
-                        self.line,
-                        format!("Invalid number format: {invalid}"),
-                        number_col_start,
-                    );
-                }
+    fn scan_number(&mut self, col: usize) {
+        let mut decimal_set = false;
+        let mut err = false;
+        while let Some(c) = self.advance() {
+            if c.is_ascii_digit() {
+                continue;
             }
-            // Parse as integer
-            else if maybe_digit_or_dec.is_ascii_digit() {
-                number.push(maybe_digit_or_dec);
+            if c == '.' && !decimal_set {
+                decimal_set = true;
+                continue;
             }
-            // Start parsing decimal
-            else if maybe_digit_or_dec == '.' {
-                // Peek if next char after decimal is digit
-                // If not error out, if yes, continue loop with decimal set
-                if decimal_set {
-                    self.lox.had_error = true;
-                    Lox::report_err(
-                        self.line,
-                        format!("Cannot have multiple decimal points in a number"),
-                        self.col,
-                    );
-                } else {
-                    decimal_set = true;
-                    number.push('.');
-                }
+            if !c.is_ascii_digit() {
+                break;
+            }
+        }
+        // self.current sits on possibly NaN or EOF so we take 1 away, which means self.current points to start
+        // of next lexeme whatever it is. This point is crucial
+        let ref lexeme = self.source[self.start..self.current -1 ];
+        self.tokens
+            .push(Token::new(TokenType::NUMBER, lexeme.into(), self.line, col));
 
-                while let Some(next_dec_digit) = self.peek() {
-                    if next_dec_digit.is_ascii_digit() {
-                        number.push(next_dec_digit);
-                        self.advance();
-                    } else {
-                        break;
-                    }
-                }
-            } else {
-                well_formed = false;
+        // We know numbers are never followed by alphabets, yet they maybe followed my math ops or maybe another decimal?
+        if let Some(c) = self.peek() {
+            if c.is_alphabetic() || (decimal_set && c == '.') {
+                self.lox.had_error = true;
+                Lox::report_err(
+                    self.line,
+                    format!("Unexpected character at numeric boundary"),
+                    self.col,
+                );
             }
         }
     }
