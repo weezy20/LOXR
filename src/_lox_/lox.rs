@@ -1,3 +1,4 @@
+#![allow(warnings, unused)]
 use super::tokenizer::scanner::Scanner;
 #[derive(Debug)]
 pub struct Lox {

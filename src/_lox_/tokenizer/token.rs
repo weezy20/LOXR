@@ -38,10 +38,12 @@ impl Token {
         let mut line_beginning = self.line_number;
         if self.r#type == TokenType::STRING {
             q = '"'; // Note that we already trim out the quotes from source string during scan_string
-            // Offset by new lines if a multi string is present
+                     // Offset by new lines if a multi string is present
             line_beginning = self.line_number - self.lexeme.matches('\n').count();
         }
-
+        if self.r#type == TokenType::EOF {
+            return format!("{:?} at ({}, {})", self.r#type, line_beginning, self.col);
+        }
         format!(
             "{:?} {q}{}{q} at ({}, {})",
             self.r#type, self.lexeme, line_beginning, self.col

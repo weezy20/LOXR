@@ -1,7 +1,11 @@
-!*+-/= = = +=<> <
+// !*+-/= = = +=<> <
 - + -- ' 
 "hi this is a string" -
 
  "hi this 
     is a multiline
        string "
+
+123.64 "hey jude"
+
+45

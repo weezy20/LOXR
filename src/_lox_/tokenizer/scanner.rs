@@ -1,6 +1,7 @@
 //! The purpose of this file is to define a scanner that takes a string and tokenizes it
 
 use crate::_lox_::lox::Lox;
+use core::num;
 use std::iter::Peekable;
 use std::str::CharIndices;
 
@@ -24,7 +25,7 @@ pub struct Scanner<'a: 'b, 'b> {
     /// Pointer to our Lox instance
     pub(crate) lox: &'b mut Lox,
 }
-
+#[allow(unused)]
 impl<'a, 'b> Scanner<'a, 'b> {
     /// Create a scanner that's ready to be used with scan_tokens
     pub fn new(source: &'a str, lox: &'b mut Lox) -> Self {
@@ -56,6 +57,17 @@ impl<'a, 'b> Scanner<'a, 'b> {
     fn is_at_end(&self) -> bool {
         self.current >= self.source.len()
     }
+    /// Peek at next char
+    fn peek(&mut self) -> Option<char> {
+        if self.is_at_end() {
+            return None;
+        }
+        if let Some((_, char)) = self.chars.peek() {
+            Some(*char)
+        } else {
+            None
+        }
+    }
     /// Consume the iterator, increment `current` offset and return the next char, returns "" if nothing left
     /// If line breaks encountered, incremenet line number
     fn advance(&mut self) -> Option<char> {
@@ -84,6 +96,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
     fn scan_single_token(&mut self) -> Option<Token> {
         let c = self.advance()?;
         match c {
+            // Single character lexemes
             '(' => self.add_token(TokenType::LEFT_PAREN),
             ')' => self.add_token(TokenType::RIGHT_PAREN),
             '{' => self.add_token(TokenType::LEFT_BRACE),
@@ -123,9 +136,11 @@ impl<'a, 'b> Scanner<'a, 'b> {
                 // Either a comment start or a division operator
                 if self.next_match('/') {
                     // We ignore everything till line end or source end whichever comes first
-                    let comment_line = self.line;
-                    while !self.is_at_end() && comment_line < self.line {
+                    while let Some(ch) = self.peek() {
                         self.advance();
+                        if ch == '\n' {
+                            break;
+                        }
                     }
                 } else {
                     self.add_token(TokenType::SLASH);
@@ -137,10 +152,18 @@ impl<'a, 'b> Scanner<'a, 'b> {
                 let current = self.col;
                 self.scan_string(current);
             }
+            // Scan for a Number literal
+            c if c.is_ascii_digit() => {
+                // Numbers start with digit, negative numbers don't, instead -123 is to be read as an expression
+                // applying -* to 123
+                let current = self.col;
+                self.scan_number(current);
+            }
             unexpected => {
                 self.lox.had_error = true; // Notify the lox machine that error has encountered so we can ignore running the file
                                            // however we must continue scanning tokens
                 let q = if unexpected == '\'' { ' ' } else { '\'' };
+                self.lox.had_error = true;
                 Lox::report_err(
                     self.line,
                     format!("Unexpected character {q}{unexpected}{q}"),
@@ -181,11 +204,86 @@ impl<'a, 'b> Scanner<'a, 'b> {
                     string_col_start,
                 ));
                 return;
-            } else if char == '\n' {
-                self.line += 1;
             } else if self.is_at_end() {
                 let message = format!("Unclosed string");
+                self.lox.had_error = true;
                 Lox::report_err(self.line, message, self.col)
+            }
+        }
+    }
+    /// Scan as number
+    fn scan_number(&mut self, number_col_start: usize) {
+        let mut number = String::from(&self.source[self.start..self.current]);
+        let (mut well_formed, mut decimal_set) = (true, false);
+        let (start, mut end) = (self.start, self.current);
+        while let Some(maybe_digit_or_dec) = self.advance() {
+            // Number parsing logic
+            println!("Number {number}");
+            // if NaN or decimal check if `number` is well formed
+            // Executes when number parsing is complete
+            if !maybe_digit_or_dec.is_ascii_digit() && maybe_digit_or_dec != '.'
+                || self.is_at_end()
+            {
+                // Break loop when number is well formed
+                if well_formed {
+                    // self.current is supposed to point at a NaN here, so we remove that from our lexeme
+
+                    // This is necessary if the number is at the end of source, to include the eof index
+                    // in our number lexeme. Otherwise, this position would point to the start of the next lexeme
+                    // or whitespace and therefore must be excluded from our number lexeme
+                    end = if self.is_at_end() {
+                        self.source.len()
+                    } else {
+                        self.current - 1
+                    };
+                    let ref lexeme = self.source[start..end];
+                    self.tokens.push(Token::new(
+                        TokenType::NUMBER,
+                        lexeme.into(),
+                        self.line,
+                        self.col,
+                    ));
+                    return;
+                } else {
+                    let invalid = &self.source[self.start..self.current];
+                    self.lox.had_error = true;
+                    Lox::report_err(
+                        self.line,
+                        format!("Invalid number format: {invalid}"),
+                        number_col_start,
+                    );
+                }
+            }
+            // Parse as integer
+            else if maybe_digit_or_dec.is_ascii_digit() {
+                number.push(maybe_digit_or_dec);
+            }
+            // Start parsing decimal
+            else if maybe_digit_or_dec == '.' {
+                // Peek if next char after decimal is digit
+                // If not error out, if yes, continue loop with decimal set
+                if decimal_set {
+                    self.lox.had_error = true;
+                    Lox::report_err(
+                        self.line,
+                        format!("Cannot have multiple decimal points in a number"),
+                        self.col,
+                    );
+                } else {
+                    decimal_set = true;
+                    number.push('.');
+                }
+
+                while let Some(next_dec_digit) = self.peek() {
+                    if next_dec_digit.is_ascii_digit() {
+                        number.push(next_dec_digit);
+                        self.advance();
+                    } else {
+                        break;
+                    }
+                }
+            } else {
+                well_formed = false;
             }
         }
     }
