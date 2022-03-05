@@ -3,6 +3,7 @@ use super::tokenizer::scanner::Scanner;
 pub struct Lox {
     /// Error encountered?
     pub(crate) had_error: bool,
+    /// Source string
     pub src: String,
 }
 
@@ -15,18 +16,15 @@ impl Lox {
         }
     }
 
-    /// Scan a file, parse it into tokens and construct an AST using Lox grammer, then run it
-    pub fn run_file(&mut self, file: &std::path::Path) {
-        // todo! : refactor this code to check if lox instance already has a source
-        let lox_file = std::fs::read_to_string(file).expect("Cannot open file path {file:?}");
-        self.run(lox_file);
-    }
     /// Parse a `lox` string as `lox` tokens and run them
     pub fn run(&mut self, src: String) {
         let mut scanner = Scanner::new(&src, self);
         scanner.scan_tokens();
         let tokens = scanner.tokens;
-        dbg!(tokens);
+        tokens
+            .iter()
+            .map(|t| t.to_string())
+            .for_each(|tr| println!("{tr}"));
         return;
         todo!(
             "
@@ -39,7 +37,7 @@ impl Lox {
     }
 
     /// Report `message` as error on `line`
-    pub fn report_err(line: usize, message: String) {
-        eprintln!("Syntax Error: {message} at line {line}");
+    pub fn report_err(line: usize, message: String, col: usize) {
+        eprintln!("Syntax Error: {message} at line {line}, column {col}");
     }
 }

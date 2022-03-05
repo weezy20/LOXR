@@ -17,6 +17,8 @@ pub struct Scanner<'a: 'b, 'b> {
     start: usize,
     /// Line number in source string, starts with 1
     line: usize,
+    /// Column number in current line, reset at each line
+    col: usize,
     /// A list of all tokens
     pub(crate) tokens: Vec<Token>,
     /// Pointer to our Lox instance
@@ -32,9 +34,10 @@ impl<'a, 'b> Scanner<'a, 'b> {
             lox,
             current: 0,
             start: 0,
-            line: 0,
+            line: 1,
             tokens: vec![],
             chars: char_indices,
+            col: 0,
         }
     }
     /// The raison d'etere for this file, note the trailing 's', different from scan_token()
@@ -47,7 +50,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
             let _next = self.scan_single_token();
         }
         self.tokens
-            .push(Token::new(TokenType::EOF, "".into(), self.line));
+            .push(Token::new(TokenType::EOF, "".into(), self.line, self.col));
     }
     /// Are we at the end of source code?
     fn is_at_end(&self) -> bool {
@@ -58,8 +61,10 @@ impl<'a, 'b> Scanner<'a, 'b> {
     fn advance(&mut self) -> Option<char> {
         if let Some((_pos, next_char)) = self.chars.next() {
             self.current += 1;
+            self.col += 1;
             if next_char == '\n' {
                 self.line += 1;
+                self.col = 0;
             }
             Some(next_char)
         } else {
@@ -70,7 +75,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
     fn add_token(&mut self, r#type: TokenType) {
         let lexeme_text = &self.source[self.start..self.current];
         self.tokens
-            .push(Token::new(r#type, lexeme_text.into(), self.line))
+            .push(Token::new(r#type, lexeme_text.into(), self.line, self.col))
     }
     fn scan_single_token(&mut self) -> Option<Token> {
         let c = self.advance()?;
@@ -86,7 +91,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
             '+' => self.add_token(TokenType::PLUS),
             '*' => self.add_token(TokenType::STAR),
             ';' => self.add_token(TokenType::SEMICOLON),
-            ' ' => {} // Ignore whitespace , for now.
+            ' ' | '\n' | '\t' | '\r' => {}
             // Single or Double character lexemes: !, !=, <, <=, >, >=
             '!' => {
                 // ! are a part of a lexeme "!=" just like "<=" or ">="
@@ -122,10 +127,15 @@ impl<'a, 'b> Scanner<'a, 'b> {
                     self.add_token(TokenType::SLASH);
                 }
             }
-            _ => {
+            unexpected => {
                 self.lox.had_error = true; // Notify the lox machine that error has encountered so we can ignore running the file
                                            // however we must continue scanning tokens
-                Lox::report_err(self.line, "Unexpected character".into());
+                let q = if unexpected == '\'' { ' ' } else { '\'' };
+                Lox::report_err(
+                    self.line,
+                    format!("Unexpected character {q}{unexpected}{q}"),
+                    self.col,
+                );
             }
         }
         self.start = self.current; // set start to the beginning of next lexeme;

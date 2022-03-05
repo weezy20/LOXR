@@ -10,6 +10,8 @@ pub struct Token {
     // literal: Literal,
     /// We include line number to track syntax error
     line_number: usize,
+    /// Column where token starts
+    col : usize
 }
 
 impl Token {
@@ -19,16 +21,17 @@ impl Token {
         lexeme: String,
         // literal: Literal,
         line_number: usize,
+        col: usize,
     ) -> Self {
         Self {
             r#type,
             lexeme,
-            // literal,
             line_number,
+            col,
         }
     }
     /// Returns a string representation of the current Token
     pub fn to_string(&self) -> String {
-        format!("{:?} {} {}", self.r#type, self.lexeme, self.line_number)
+        format!("{:?} \"{}\" at ({}, {})", self.r#type, self.lexeme, self.line_number, self.col)
     }
 }
