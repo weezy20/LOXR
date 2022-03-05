@@ -173,7 +173,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
     fn scan_string(&mut self, string_col_start: usize) {
         while let Some(char) = self.advance() {
             if char == '"' {
-                let lexeme_text = &self.source[self.start+1..self.current-1];
+                let lexeme_text = &self.source[self.start + 1..self.current - 1];
                 self.tokens.push(Token::new(
                     TokenType::STRING,
                     lexeme_text.into(),
@@ -181,6 +181,8 @@ impl<'a, 'b> Scanner<'a, 'b> {
                     string_col_start,
                 ));
                 return;
+            } else if char == '\n' {
+                self.line += 1;
             } else if self.is_at_end() {
                 let message = format!("Unclosed string");
                 Lox::report_err(self.line, message, self.col)
