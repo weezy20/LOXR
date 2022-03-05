@@ -1,6 +1,6 @@
 //! Definitions for Token types
 #[allow(non_camel_case_types, unused)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenType {
     LEFT_PAREN,    // (
     RIGHT_PAREN,   // )

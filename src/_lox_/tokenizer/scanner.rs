@@ -32,12 +32,12 @@ impl<'a, 'b> Scanner<'a, 'b> {
         Self {
             source,
             lox,
-            current: 0,
-            start: 0,
+            current: 0, // 0 because these are indexes into source string
+            start: 0,   // same as above
             line: 1,
             tokens: vec![],
             chars: char_indices,
-            col: 0,
+            col: 0, // Initial offset is already set as advance will increment this on each line
         }
     }
     /// The raison d'etere for this file, note the trailing 's', different from scan_token()
@@ -62,20 +62,24 @@ impl<'a, 'b> Scanner<'a, 'b> {
         if let Some((_pos, next_char)) = self.chars.next() {
             self.current += 1;
             self.col += 1;
+
+            // In case our current char is a new line, set self.col = 0 because on next advance call
+            // This will be incremented to 1
             if next_char == '\n' {
                 self.line += 1;
-                self.col = 0;
+                self.col = 0; // On next advance call, this will be incremented
             }
             Some(next_char)
         } else {
             None
         }
     }
-    /// create a new TokenType with the piece of text from source and push it to tokens list
+    /// create a new TokenType with the piece of lexeme text from `start` to `current`
+    ///  and push it to tokens list.
     fn add_token(&mut self, r#type: TokenType) {
         let lexeme_text = &self.source[self.start..self.current];
         self.tokens
-            .push(Token::new(r#type, lexeme_text.into(), self.line, self.col))
+            .push(Token::new(r#type, lexeme_text.into(), self.line, self.col));
     }
     fn scan_single_token(&mut self) -> Option<Token> {
         let c = self.advance()?;
@@ -127,6 +131,12 @@ impl<'a, 'b> Scanner<'a, 'b> {
                     self.add_token(TokenType::SLASH);
                 }
             }
+            // String literal
+            '"' => {
+                // Save column number for adding string token type
+                let current = self.col;
+                self.scan_string(current);
+            }
             unexpected => {
                 self.lox.had_error = true; // Notify the lox machine that error has encountered so we can ignore running the file
                                            // however we must continue scanning tokens
@@ -138,7 +148,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
                 );
             }
         }
-        self.start = self.current; // set start to the beginning of next lexeme;
+        self.start = self.current; // Important: set start to the beginning of next lexeme;
         Default::default()
     }
     /// Check if the very next character is equal to parameter
@@ -157,6 +167,24 @@ impl<'a, 'b> Scanner<'a, 'b> {
             }
         } else {
             false
+        }
+    }
+    /// Scan as string, upto next `"`, omitting start and end `"`
+    fn scan_string(&mut self, string_col_start: usize) {
+        while let Some(char) = self.advance() {
+            if char == '"' {
+                let lexeme_text = &self.source[self.start+1..self.current-1];
+                self.tokens.push(Token::new(
+                    TokenType::STRING,
+                    lexeme_text.into(),
+                    self.line,
+                    string_col_start,
+                ));
+                return;
+            } else if self.is_at_end() {
+                let message = format!("Unclosed string");
+                Lox::report_err(self.line, message, self.col)
+            }
         }
     }
 }
