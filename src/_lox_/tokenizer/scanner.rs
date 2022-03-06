@@ -80,6 +80,10 @@ impl<'a, 'b> Scanner<'a, 'b> {
     fn is_at_end(&self) -> bool {
         self.current >= self.source.len()
     }
+    /// Print current lexeme text
+    fn current_lexeme(&self) -> String {
+        self.source[self.start..self.current].to_string()
+    }
     /// Peek at next char
     fn peek(&mut self) -> Option<char> {
         if let Some((_, char)) = self.chars.peek() {
@@ -189,7 +193,13 @@ impl<'a, 'b> Scanner<'a, 'b> {
                             } else {
                                 self.advance();
                             }
-                        } else {
+                        }
+                        // peek_next() is None before peek() can be so most likely we are 1 char away from EOF
+                        else {
+                            if self.peek().is_some() && self.peek_next().is_none() {
+                                // To properly capture last char at end of unclosed comment
+                                self.advance();
+                            }
                             // EOF
                             Lox::report_err(
                                 self.line,
@@ -230,7 +240,6 @@ impl<'a, 'b> Scanner<'a, 'b> {
                 self.identifier(col);
             }
             unexpected => {
-                println!("Unexpected char triggered");
                 self.lox.had_error = true; // Notify the lox machine that error has encountered so we can ignore running the file
                                            // however we must continue scanning tokens
                 let q = if unexpected == '\'' { ' ' } else { '\'' };
