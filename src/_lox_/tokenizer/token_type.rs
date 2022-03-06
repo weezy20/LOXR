@@ -48,4 +48,7 @@ pub enum TokenType {
     WHILE,
 
     EOF, // EOF
+
+    MULTI_LINE_COMMENT,
+    COMMENT,
 }

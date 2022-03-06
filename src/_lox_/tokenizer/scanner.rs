@@ -82,9 +82,6 @@ impl<'a, 'b> Scanner<'a, 'b> {
     }
     /// Peek at next char
     fn peek(&mut self) -> Option<char> {
-        if self.is_at_end() {
-            return None;
-        }
         if let Some((_, char)) = self.chars.peek() {
             Some(*char)
         } else {
@@ -93,14 +90,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
     }
     /// Double peek
     fn peek_next(&mut self) -> Option<char> {
-        if self.is_at_end() {
-            return None;
-        }
-        if let Some((_, char)) = self.chars.peek() {
-            Some(*char)
-        } else {
-            None
-        }
+        self.source.chars().nth(self.current + 1)
     }
     /// Consume the iterator, increment `current` offset and return the next char, returns "" if nothing left
     /// If line breaks encountered, incremenet line number
@@ -173,6 +163,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
                 }
             }
             '/' => {
+                let col = self.col;
                 // Either a comment start or a division operator
                 if self.next_match('/') {
                     // We ignore everything till line end or source end whichever comes first
@@ -182,6 +173,33 @@ impl<'a, 'b> Scanner<'a, 'b> {
                             break;
                         }
                     }
+                    self.add_token_col(TokenType::COMMENT, col);
+                }
+                // Start multiline comment
+                else if self.next_match('*') {
+                    let mut comment = true;
+                    while comment {
+                        if self.peek().is_some() && self.peek_next().is_some() {
+                            if self.peek().unwrap() == '*'
+                                && self.peek_next().unwrap() == '/'
+                            {
+                                self.advance();
+                                self.advance();
+                                comment = false;
+                            } else {
+                                self.advance();
+                            }
+                        } else {
+                            // EOF
+                            Lox::report_err(
+                                self.line,
+                                format!("Unclosed comment"),
+                                self.col,
+                            );
+                            comment = false;
+                        }
+                    }
+                    self.add_token_col(TokenType::MULTI_LINE_COMMENT, col);
                 } else {
                     self.add_token(TokenType::SLASH);
                 }
@@ -212,6 +230,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
                 self.identifier(col);
             }
             unexpected => {
+                println!("Unexpected char triggered");
                 self.lox.had_error = true; // Notify the lox machine that error has encountered so we can ignore running the file
                                            // however we must continue scanning tokens
                 let q = if unexpected == '\'' { ' ' } else { '\'' };
@@ -226,7 +245,8 @@ impl<'a, 'b> Scanner<'a, 'b> {
         self.start = self.current; // Important: set start to the beginning of next lexeme;
         Default::default()
     }
-    /// Check if the very next character is equal to parameter
+    /// Check if the very next character is equal to parameter,
+    /// Only consumes the chars iterator iff expected == next character
     fn next_match(&mut self, expected: char) -> bool {
         if self.is_at_end() {
             return false;

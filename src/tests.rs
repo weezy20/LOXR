@@ -63,3 +63,21 @@ fn bad_number3() {
     dbg!(tokens);
     assert_eq!(scanner.current, source.len());
 }
+
+#[test]
+fn multi_line_comment() {
+    let source = String::from(
+        r#"
+    /* This is a multi line comment
+yababababdbbdbabdbabdba
+adsadasdasdasd */
+
+// This is a single line comment"#,
+    );
+    let mut lox = crate::_lox_::lox::Lox::new(source.clone());
+    let mut scanner = Scanner::new(&source, &mut lox);
+    scanner.scan_tokens();
+    let tokens = scanner.tokens;
+    dbg!(tokens);
+    assert_eq!(scanner.current, source.len());
+}
