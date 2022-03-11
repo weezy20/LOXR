@@ -5,14 +5,14 @@ use super::token_type::TokenType;
 
 #[derive(Debug, Clone)]
 pub struct Token {
-    r#type: TokenType,
+    pub r#type: TokenType,
     /// A Lexeme is a part of valid Lox grammer. Some lexemes can be single char long
     /// whilst others maybe two or more characters
-    lexeme: String,
+    pub lexeme: String,
     /// We include line number to track syntax error
-    line_number: usize,
+    pub line_number: usize,
     /// Column where token starts
-    col: usize,
+    pub col: usize,
 }
 
 impl Token {
