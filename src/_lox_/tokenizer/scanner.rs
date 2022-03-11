@@ -137,7 +137,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
             '}' => self.add_token(TokenType::RIGHT_BRACE),
             '[' => self.add_token(TokenType::LEFT_SQUARE),
             ']' => self.add_token(TokenType::RIGHT_SQUARE),
-            ',' => self.add_token(TokenType::RIGHT_SQUARE),
+            ',' => self.add_token(TokenType::COMMA),
             '-' => self.add_token(TokenType::MINUS),
             '+' => self.add_token(TokenType::PLUS),
             '*' => self.add_token(TokenType::STAR),
