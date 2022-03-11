@@ -5,3 +5,6 @@ pub mod lox;
 
 /// A module for token definitions, and a lox lexer and scanner
 pub mod tokenizer;
+
+/// Module containing grammar definitions and a parser to create ASTs out of lexer output
+pub mod parser;
