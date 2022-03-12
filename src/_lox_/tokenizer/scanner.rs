@@ -92,9 +92,11 @@ impl<'a, 'b> Scanner<'a, 'b> {
             None
         }
     }
-    /// Double peek
+    /// This is expensive -> self.source.chars().nth(self.current + 1
     fn peek_next(&mut self) -> Option<char> {
-        self.source.chars().nth(self.current + 1)
+        let mut chars_clone = self.chars.clone();
+        chars_clone.next();
+        chars_clone.peek().map(|&(_, c)| c)
     }
     /// Consume the iterator, increment `current` offset and return the next char, returns "" if nothing left
     /// If line breaks encountered, incremenet line number
@@ -184,9 +186,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
                     let mut comment = true;
                     while comment {
                         if self.peek().is_some() && self.peek_next().is_some() {
-                            if self.peek().unwrap() == '*'
-                                && self.peek_next().unwrap() == '/'
-                            {
+                            if self.peek().unwrap() == '*' && self.peek_next().unwrap() == '/' {
                                 self.advance();
                                 self.advance();
                                 comment = false;
@@ -201,11 +201,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
                                 self.advance();
                             }
                             // EOF
-                            Lox::report_err(
-                                self.line,
-                                format!("Unclosed comment"),
-                                self.col,
-                            );
+                            Lox::report_err(self.line, format!("Unclosed comment"), self.col);
                             comment = false;
                         }
                     }
