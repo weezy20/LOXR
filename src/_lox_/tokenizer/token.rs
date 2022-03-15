@@ -3,7 +3,7 @@ use std::io::Write;
 
 use super::token_type::TokenType;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct Token {
     pub r#type: TokenType,
     /// A Lexeme is a part of valid Lox grammer. Some lexemes can be single char long

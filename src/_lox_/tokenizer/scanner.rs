@@ -28,6 +28,7 @@ lazy_static! {
     };
 }
 
+
 use super::{token::Token, token_type::TokenType};
 #[derive(Debug)]
 pub struct Scanner<'a: 'b, 'b> {

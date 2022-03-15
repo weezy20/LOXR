@@ -63,6 +63,12 @@ impl TokenType {
     }
 }
 
+impl Default for TokenType {
+    fn default() -> Self {
+        TokenType::NIL
+    }
+}
+
 #[cfg(test)]
 mod token_type_tests {
     use super::*;
