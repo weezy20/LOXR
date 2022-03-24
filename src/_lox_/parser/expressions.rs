@@ -1,6 +1,20 @@
-use super::traits::Expression;
 use crate::_lox_::tokenizer::token::Token;
 use crate::_lox_::tokenizer::token_type::TokenType;
+
+/// # The overarching Expression type
+///
+/// An Expression can be of the following types:
+/// 1. Literal
+/// 2. Unary Expression with prefixes like ! or -
+/// 3. Binary Expression with infix arithmetic operators  (+, -, *, /) or logic operators (==, !=, <, <=, >, >=)
+/// 4. Parantheses: An Expression maybe wrapped in a a pair of ( and )
+#[derive(PartialEq, Debug)]
+pub enum Expression {
+    BinExp(BinaryExpr),
+    UnExp(UnaryExpr),
+    Lit(Literal),
+    Group(Grouping),
+}
 
 pub type Boxy = Box<Expression>;
 
@@ -65,7 +79,6 @@ pub struct Grouping {
 
 #[cfg(test)]
 mod test {
-    use crate::_lox_::parser::traits::Expression;
     use crate::_lox_::parser::traits::ExpressionPrinter;
     use crate::_lox_::tokenizer::token::Token;
     use crate::_lox_::tokenizer::token_type::TokenType;
