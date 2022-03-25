@@ -8,6 +8,7 @@ use crate::_lox_::tokenizer::token_type::TokenType;
 /// 2. Unary Expression with prefixes like ! or -
 /// 3. Binary Expression with infix arithmetic operators  (+, -, *, /) or logic operators (==, !=, <, <=, >, >=)
 /// 4. Parantheses: An Expression maybe wrapped in a a pair of ( and )
+
 #[derive(PartialEq, Debug)]
 pub enum Expression {
     BinExp(BinaryExpr),
