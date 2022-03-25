@@ -106,19 +106,81 @@
 //! ```rust
 //! pub struct BinaryExpr<L, R>
 //! where
-//!     L: Expression + Printer + Evaluate,
-//!     R: Expression + Printer + Evaluate,
+//!     L: Expression,
+//!     R: Expression,
 //! {
 //!     left: L,
 //!     right: R,
 //! }
 //! ```
 //! 
-//! Is this any better? Again, sadly no, as trait bounds will need to be modified when you add new kinds of operations
+//! Is this any better? Maybe. Our initial problem was that we needed two types of abstraction,
+//! one for the types, which would allow nesting types within types like `BinaryExpr` and `Grouping`
+//! and the other for behaviour decoupled from each other;
+//! In a way that would allow us to extend behaviour without worrying about modifying existing type or method definitions
+//! and also to allow adding types without requiring to modify existing code. Rust by default with traits, addresses the first problem. 
+//! 
+//! The second problem was that if we used an enum to define an overarching type for expression, adding types
+//! would require modifying this enum. This is where generics come in, providing us the much needed abstraction, without
+//! having to modify existing code. Consider a trait `Expression`
 //! As it stands now, Rust allows us to easily expand behaviour through traits, but to extend types, especially types
 //! that share the "class", we would have to resort to enums, wrapped enums in the case of extending types, and if we
-//! don't want enums, trait objects which would require to be downcasted in order to do anything useful
-
+//! don't want enums, trait objects is another option, which gets unwieldy due to downcasting required to do anything
+//! useful, defeating the purpose of having an abstraction in the first place.
+//! 
+//! However, generics, in combination with traits, provide, in my experience, a very solid abstraction that can abstract
+//! over types like expressions, and make it easy to solve the expression problem. How this works out in practice, we
+//! will have to find out as we implement the parser.
+//! 
+//! ```rust
+//! // Consider adding a new type
+//! pub struct NewExprType {}
+//! // Now let's see if this design upholds OC principle:
+//! // Adding this type to the class of Expression just invovles implementing `trait Expression`
+//! impl Expression for NewExprType {}
+//! // Now consider the definition of `BinaryExpr`
+//! pub struct BinaryExpr<L, R>
+//! where
+//!     L: Expression,
+//!     R: Expression,
+//! {
+//!     left: L,
+//!     right: R,
+//! }
+//! 
+//! // Will this struct construct with our NewExprType? Of course.
+//! let b : BinaryExpr<NewExprType, NewExprType> = 
+//!     BinaryExpr { left : NewExprType {}, right: NewExprType {} };
+//! // Now suppose a trait `Eval` exists on `BinaryExpr`
+//! pub trait Eval : Expression {
+//!     fn eval(&self) -> f32;
+//! }
+//! // note the trait bound of `Expression`, every `Eval` must be an `Expression`
+//! // But not all `Expression` is `Eval`
+//! // Let's implement `Eval` for our new type
+//! impl Eval for NewExprType {
+//!     fn eval(&self) -> f32 { 42.0 }
+//! }
+//! 
+//! // Let's see the implementation for BinaryExpr
+//! // All that's required for this eval, is the inner generic types are also `Eval`
+//! impl<L,R> Eval for BinaryExpr<L,R>
+//! where
+//!     L: Eval
+//!     R: Eval
+//! {
+//!     fn eval(&self) -> f32 {
+//!        // let's just add for now
+//!        self.left.eval() + self.right.eval()
+//!     }
+//! }
+//! ```
+//! So adding new types was EASY using generics and traits for type abstraction
+//! and adheres to OC principle. The only problem that I can see with this approach is when implementing a new operation
+//! say trait `OP` requires the inner generics to be bounded by something other than `OP + Expression`, in that case
+//! the generics trait bound won't be satisfied and it wouldn't be possible to implement the operation. But at this point
+//! It's good enough to warrant it's own development branch
+//! 
 
 /// Definition for Expression enum, and types that are Expression
 pub mod traits;
@@ -126,3 +188,31 @@ pub mod traits;
 /// Expression types
 pub mod expressions;
 
+// pub trait newOP {}
+// impl<L, R> newOP for BinaryExpr<L, R> 
+// where L : newOP, R: newOP {
+//     fn newOP(self) {
+//         self.left.newOP() + self.right.newOP()
+//     }
+// }
+// use std::{marker::PhantomData, fmt::Binary};
+
+// use self::expressions::Expression;
+// pub struct Stmt<T>(PhantomData<T>);
+
+// impl<T> Expression for Stmt<T> {} 
+// impl<T> Eval for Stmt<T> {}
+// impl<T> Printer for Stmt<T> {}
+// impl<T> NewOp for Stmt<T> {}
+// pub struct BinaryExpr<L, R> 
+// where L: Expression, R : Expression {
+
+//     l : L, r : R
+// }
+
+// impl<T,K> Eval for BinaryExpr<T,K>
+// where T: Eval, K: Eval {
+//     fn eval(self) {
+//         self.l.eval()
+//     }
+// }

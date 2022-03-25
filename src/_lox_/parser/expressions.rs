@@ -17,20 +17,15 @@ pub enum Expression {
     Group(Grouping),
 }
 
-pub type Boxy = Box<Expression>;
-
-// I guess having a BinaryExp with left Boxy\<U\> \<operator\> right Boxy\<K\> wouldn't make sense unless
-// it's a loosely typed system like Javascript where you can add a number to a string but that's for later
-// We are intentionally refraining from any generic mumbo jumbo just to make life easier.
 #[derive(Debug, PartialEq)]
 pub struct BinaryExpr {
-    pub left: Boxy,
+    pub left: Box<Expression>,
     pub operator: Token,
-    pub right: Boxy,
+    pub right: Box<Expression>,
 }
 
 impl BinaryExpr {
-    pub fn new(left: Boxy, operator: Token, right: Boxy) -> Self {
+    pub fn new(left: Box<Expression>, operator: Token, right: Box<Expression>) -> Self {
         Self {
             left,
             operator,
@@ -42,11 +37,11 @@ impl BinaryExpr {
 #[derive(Debug, PartialEq)]
 pub struct UnaryExpr {
     pub operator: Token,
-    pub operand: Boxy,
+    pub operand: Box<Expression>,
 }
 impl UnaryExpr {
     /// Question: What happens if operand : is a UnaryExpr. Nothing special, valid syntax
-    pub fn new(operator: Token, operand: Boxy) -> Result<Self, String> {
+    pub fn new(operator: Token, operand: Box<Expression>) -> Result<Self, String> {
         match operator.r#type {
             TokenType::MINUS | TokenType::BANG => Ok(Self { operand, operator }),
             u => Err(format!(
@@ -75,7 +70,7 @@ impl Literal {
 
 #[derive(Debug, PartialEq)]
 pub struct Grouping {
-    pub inner: Boxy,
+    pub inner: Box<Expression>,
 }
 
 #[cfg(test)]
