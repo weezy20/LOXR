@@ -183,7 +183,7 @@
 //! 
 
 /// Definition for Expression enum, and types that are Expression
-pub mod traits;
+pub mod expression_printer;
 
 /// Expression types
 pub mod expressions;

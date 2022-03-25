@@ -1,16 +1,10 @@
+//! This is an example of adding a new operation, We create a new file for our operation
+//! We write the implementations for this operation for each type. If a new type was to be added
+//! we just import the trait from this file, and implement it for our new type
 #![allow(unused)]
 use super::expressions::*;
 use crate::_lox_::tokenizer::{token::Token, token_type::TokenType};
 use std::fmt::Debug;
-
-
-
-/// Helper struct to store info for Expressions expansion
-#[derive(Default)]
-pub struct Metadata {
-    /// Optional list of boxed Expressions
-    expressions: Option<Vec<Box<Expression>>>,
-}
 
 macro_rules! start {
     ($id: tt) => {{
@@ -19,20 +13,9 @@ macro_rules! start {
     }};
 }
 
-pub trait ExpressionPrinter {
+pub trait ExpressionPrinter: Expression {
     /// String representation of current ExpressionPrinter
     fn print(&self) -> String;
-}
-
-impl ExpressionPrinter for Expression {
-    fn print(&self) -> String {
-        match self {
-            Expression::BinExp(e) => e.print(),
-            Expression::UnExp(e) => e.print(),
-            Expression::Lit(e) => e.print(),
-            Expression::Group(e) => e.print(),
-        }
-    }
 }
 
 impl ExpressionPrinter for Literal {
@@ -43,8 +26,8 @@ impl ExpressionPrinter for Literal {
         s
     }
 }
-
-impl ExpressionPrinter for Grouping {
+// Note the pattern
+impl<E: Expression + ExpressionPrinter> ExpressionPrinter for Grouping<E> {
     fn print(&self) -> String {
         let mut s = start!("Grouping");
         s.push_str(&self.inner.print());
@@ -53,7 +36,7 @@ impl ExpressionPrinter for Grouping {
     }
 }
 
-impl ExpressionPrinter for UnaryExpr {
+impl<E: Expression + ExpressionPrinter> ExpressionPrinter for UnaryExpr<E> {
     fn print(&self) -> String {
         let mut s = start!("UnaryExp");
         s.push_str(&self.operator.lexeme);
@@ -62,7 +45,11 @@ impl ExpressionPrinter for UnaryExpr {
     }
 }
 
-impl ExpressionPrinter for BinaryExpr {
+impl<L, R> ExpressionPrinter for BinaryExpr<L, R>
+where
+    L: Expression + ExpressionPrinter,
+    R: Expression + ExpressionPrinter,
+{
     fn print(&self) -> String {
         let mut s = start!("BinaryExp");
         s.push_str(&self.operator.lexeme);
