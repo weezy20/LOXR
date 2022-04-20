@@ -113,13 +113,13 @@
 //!     right: R,
 //! }
 //! ```
-//! 
+//!
 //! Is this any better? Maybe. Our initial problem was that we needed two types of abstraction,
 //! one for the types, which would allow nesting types within types like `BinaryExpr` and `Grouping`
 //! and the other for behaviour decoupled from each other;
 //! In a way that would allow us to extend behaviour without worrying about modifying existing type or method definitions
-//! and also to allow adding types without requiring to modify existing code. Rust by default with traits, addresses the first problem. 
-//! 
+//! and also to allow adding types without requiring to modify existing code. Rust by default with traits, addresses the first problem.
+//!
 //! The second problem was that if we used an enum to define an overarching type for expression, adding types
 //! would require modifying this enum. This is where generics come in, providing us the much needed abstraction, without
 //! having to modify existing code. Consider a trait `Expression`
@@ -127,11 +127,11 @@
 //! that share the "class", we would have to resort to enums, wrapped enums in the case of extending types, and if we
 //! don't want enums, trait objects is another option, which gets unwieldy due to downcasting required to do anything
 //! useful, defeating the purpose of having an abstraction in the first place.
-//! 
+//!
 //! However, generics, in combination with traits, provide, in my experience, a very solid abstraction that can abstract
 //! over types like expressions, and make it easy to solve the expression problem. How this works out in practice, we
 //! will have to find out as we implement the parser.
-//! 
+//!
 //! ```rust
 //! // Consider adding a new type
 //! pub struct NewExprType {}
@@ -147,9 +147,9 @@
 //!     left: L,
 //!     right: R,
 //! }
-//! 
+//!
 //! // Will this struct construct with our NewExprType? Of course.
-//! let b : BinaryExpr<NewExprType, NewExprType> = 
+//! let b : BinaryExpr<NewExprType, NewExprType> =
 //!     BinaryExpr { left : NewExprType {}, right: NewExprType {} };
 //! // Now suppose a trait `Eval` exists on `BinaryExpr`
 //! pub trait Eval : Expression {
@@ -161,7 +161,7 @@
 //! impl Eval for NewExprType {
 //!     fn eval(&self) -> f32 { 42.0 }
 //! }
-//! 
+//!
 //! // Let's see the implementation for BinaryExpr
 //! // All that's required for this eval, is the inner generic types are also `Eval`
 //! impl<L,R> Eval for BinaryExpr<L,R>
@@ -180,39 +180,38 @@
 //! say trait `OP` requires the inner generics to be bounded by something other than `OP + Expression`, in that case
 //! the generics trait bound won't be satisfied and it wouldn't be possible to implement the operation. But at this point
 //! It's good enough to warrant it's own development branch
-//! 
+//!
 
+use super::tokenizer::token::Token;
+use super::tokenizer::token_type::TokenType;
+use expressions::Expression;
 /// Definition for Expression enum, and types that are Expression
 pub mod traits;
 
 /// Expression types
 pub mod expressions;
 
-// pub trait newOP {}
-// impl<L, R> newOP for BinaryExpr<L, R> 
-// where L : newOP, R: newOP {
-//     fn newOP(self) {
-//         self.left.newOP() + self.right.newOP()
-//     }
-// }
-// use std::{marker::PhantomData, fmt::Binary};
+/// Parser
+#[derive(Default, Debug, Clone)]
+pub struct Parser {
+    tokens: Vec<Token>,
+    current: usize,
+}
 
-// use self::expressions::Expression;
-// pub struct Stmt<T>(PhantomData<T>);
+impl Parser {
+    /// equality → comparison ( ( "!=" | "==" ) comparison )* ;
 
-// impl<T> Expression for Stmt<T> {} 
-// impl<T> Eval for Stmt<T> {}
-// impl<T> Printer for Stmt<T> {}
-// impl<T> NewOp for Stmt<T> {}
-// pub struct BinaryExpr<L, R> 
-// where L: Expression, R : Expression {
+    fn expression() -> Expression {
+        Self::equality()
+    }
 
-//     l : L, r : R
-// }
+    fn equality() -> Expression {
+        let expr = Self::comparison();
+        while match(TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL)
 
-// impl<T,K> Eval for BinaryExpr<T,K>
-// where T: Eval, K: Eval {
-//     fn eval(self) {
-//         self.l.eval()
-//     }
-// }
+    }
+
+    fn comparison() -> Expression {
+        todo!()
+    }
+}
