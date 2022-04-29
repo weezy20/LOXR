@@ -182,36 +182,128 @@
 //! It's good enough to warrant it's own development branch
 //!
 
+use crate::_lox_::parser::expressions::BinaryExpr;
+
 use super::tokenizer::token::Token;
 use super::tokenizer::token_type::TokenType;
+use better_peekable::{BPeekable, BetterPeekable};
 use expressions::Expression;
+use std::vec::IntoIter;
+
 /// Definition for Expression enum, and types that are Expression
 pub mod traits;
 
 /// Expression types
 pub mod expressions;
 
-/// Parser
-#[derive(Default, Debug, Clone)]
+/// Parser grammar:
+///
+/// *expression*     → `literal
+///                  | unary
+///                  | binary
+///                  | grouping ;`
+///
+/// *literal*        → `NUMBER | STRING | "true" | "false" | "nil" ;`
+///
+/// *grouping*       → `"(" expression ")" ;`
+///
+/// *unary*          → `( "-" | "!" ) expression ;`
+///
+/// *binary*         → `expression operator expression ;`
+///
+/// *operator*       → `"==" | "!=" | "<" | "<=" | ">" | ">="
+///                  | "+"  | "-"  | "*" | "/" ;`
+///
+/// Furthermore if we bake in the precedence rules it looks like this,
+/// where top to bottom indicates the level of precedence of a given rule, top being matched the least
+/// and bottom being matched the first:
+///
+/// *expression*  → `equality`
+///
+/// *equality*    → `comparsion ("==" | "!=" comparison)*;`
+///
+/// *comparison*  → `term ("<="|"<"|">"|">=" term)*;`
+///
+/// *term*        → `factor ("+"|"-" factor)*;`
+///
+/// *factor*      → `unary (( "/" | "*" ) unary )*;`
+///
+/// *unary*       → `("-" | "!") unary | primary;`
+///
+/// *primary*     → `literal | "(" expression ")";`
+
+#[derive(Debug, Clone)]
 pub struct Parser {
-    tokens: Vec<Token>,
+    tokens: BPeekable<IntoIter<Token>>,
     current: usize,
+    previous: Option<Token>,
 }
 
 impl Parser {
+    /// In a recursive descent parser, the least priority rule is matched first
+    /// as we descend down into nested grammer rules
     /// equality → comparison ( ( "!=" | "==" ) comparison )* ;
 
-    fn expression() -> Expression {
-        Self::equality()
+    fn expression(&mut self) -> Box<Expression> {
+        self.equality()
+    }
+    fn equality(&mut self) -> Box<Expression> {
+        use crate::_lox_::tokenizer::token_type::TokenType::*;
+
+        let mut expr = self.comparison();
+        while self.matches(vec![BANG_EQUAL, EQUAL_EQUAL]) {
+            let operator: Token = self
+                .previous
+                .clone()
+                .expect("matches will ensure this field to be something");
+            let right = self.comparison();
+            expr = Box::new(Expression::BinExp(BinaryExpr::new(
+                expr, operator, right,
+            )));
+        }
+        expr
     }
 
-    fn equality() -> Expression {
-        let expr = Self::comparison();
-        while match(TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL)
-
-    }
-
-    fn comparison() -> Expression {
+    fn comparison(&mut self) -> Box<Expression> {
         todo!()
+    }
+}
+impl Parser {
+    pub fn new(tokens: Vec<Token>) -> Self {
+        Self {
+            tokens: tokens.into_iter().better_peekable(),
+            current: 0_usize,
+            previous: None,
+        }
+    }
+    /// Searches the current token iterator for a match in the list of searchable token types passed to it
+    /// For instance in the comparison rule, we may want to check a multitude of tokentypes for a comparision, so we can pass all comparison operators in the searchable list and if we get a yes back from this function,
+    /// it means that we must call the comparision rule again
+    fn matches(&mut self, searchable_list: Vec<TokenType>) -> bool {
+        todo!("Requires nuanced thinking");
+        let mut n = 0;
+        while let Some(peeked_token) = self.tokens.peek_n(n) {
+            let ref peeked_type = peeked_token.r#type;
+            if searchable_list.contains(peeked_type) {
+                self.advance();
+                return true;
+            } else {
+                n += 1;
+            }
+        }
+        false
+    }
+    /// Increment the `current` index and consume a token from the Parser's `tokens` list
+    ///  returning the token that was just consumed OR, in the case that we have reached EOF or an abrupt end of tokens in our `tokens` list, we just send the previous cached token
+    fn advance(&mut self) -> Option<Token> {
+        if let Some(_) = self.tokens.peek() && !self.is_at_end() {
+            self.current += 1;
+            self.previous = self.tokens.next();
+        }
+        self.previous.clone()
+    }
+    fn is_at_end(&mut self) -> bool {
+        if let Some(peeked_token) = self.tokens.peek() && peeked_token.r#type == TokenType::EOF { return true;}
+        false
     }
 }

@@ -1,9 +1,9 @@
 //! The purpose of this file is to define a scanner that takes a string and tokenizes it
 
 use crate::_lox_::lox::Lox;
+use better_peekable::{BPeekable, BetterPeekable};
 use lazy_static::lazy_static;
 use std::collections::HashMap;
-use std::iter::Peekable;
 use std::str::CharIndices;
 use TokenType::*;
 lazy_static! {
@@ -28,14 +28,13 @@ lazy_static! {
     };
 }
 
-
 use super::{token::Token, token_type::TokenType};
 #[derive(Debug)]
 pub struct Scanner<'a: 'b, 'b> {
     /// Source string to tokenize
     pub(crate) source: &'a str,
     /// Iterator over source characters
-    chars: Peekable<CharIndices<'a>>,
+    chars: BPeekable<CharIndices<'a>>,
     /// Offset from start of source
     pub(crate) current: usize,
     /// Points to the first character of the current lexeme under consideration
@@ -53,7 +52,7 @@ pub struct Scanner<'a: 'b, 'b> {
 impl<'a, 'b> Scanner<'a, 'b> {
     /// Create a scanner that's ready to be used with scan_tokens
     pub fn new(source: &'a str, lox: &'b mut Lox) -> Self {
-        let char_indices = source.char_indices().peekable();
+        let char_indices = source.char_indices().better_peekable();
         Self {
             source,
             lox,
@@ -78,26 +77,22 @@ impl<'a, 'b> Scanner<'a, 'b> {
             .push(Token::new(TokenType::EOF, "".into(), self.line, self.col));
     }
     /// Are we at the end of source code?
+    #[inline(always)]
     fn is_at_end(&self) -> bool {
         self.current >= self.source.len()
     }
     /// Print current lexeme text
+    #[inline(always)]
     fn current_lexeme(&self) -> String {
         self.source[self.start..self.current].to_string()
     }
-    /// Peek at next char
+    #[inline(always)]
     fn peek(&mut self) -> Option<char> {
-        if let Some((_, char)) = self.chars.peek() {
-            Some(*char)
-        } else {
-            None
-        }
+        self.chars.peek().map(|&(_, c)| c)
     }
-    /// This is expensive -> self.source.chars().nth(self.current + 1
+    #[inline(always)]
     fn peek_next(&mut self) -> Option<char> {
-        let mut chars_clone = self.chars.clone();
-        chars_clone.next();
-        chars_clone.peek().map(|&(_, c)| c)
+        self.chars.peek_n(1).map(|&(_, c)| c)
     }
     /// Consume the iterator, increment `current` offset and return the next char, returns "" if nothing left
     /// If line breaks encountered, incremenet line number
