@@ -20,7 +20,6 @@ impl Token {
     pub fn new(
         r#type: TokenType,
         lexeme: String,
-        // literal: Literal,
         line_number: usize,
         col: usize,
     ) -> Self {
@@ -41,11 +40,25 @@ impl Token {
             line_beginning = self.line_number - self.lexeme.matches('\n').count();
         }
         if self.r#type == TokenType::EOF {
-            return format!("{:?} at ({}, {})", self.r#type, line_beginning, self.col);
+            return format!(
+                "{:?} at ({}, {})",
+                self.r#type, line_beginning, self.col
+            );
         }
         format!(
             "{:?} {q}{}{q} at ({}, {})",
             self.r#type, self.lexeme, line_beginning, self.col
         )
+    }
+}
+
+impl From<TokenType> for Token {
+    /// Create a token for test purposes
+    fn from(ty: TokenType) -> Self {
+        Token {
+            r#type: ty,
+            lexeme: ty.to_string(),
+            ..Default::default()
+        }
     }
 }

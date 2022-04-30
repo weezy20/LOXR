@@ -182,10 +182,9 @@
 //! It's good enough to warrant it's own development branch
 //!
 
-use crate::_lox_::parser::expressions::BinaryExpr;
-
-use super::tokenizer::token::Token;
-use super::tokenizer::token_type::TokenType;
+use crate::_lox_::parser::expressions::*;
+use crate::_lox_::tokenizer::token::Token;
+use crate::_lox_::tokenizer::token_type::TokenType::{self, *};
 use better_peekable::{BPeekable, BetterPeekable};
 use expressions::Expression;
 use std::vec::IntoIter;
@@ -238,18 +237,17 @@ pub struct Parser {
     current: usize,
     previous: Option<Token>,
 }
-
+/// In a recursive descent parser, the least priority rule is matched first
+/// as we descend down into nested grammer rules
 impl Parser {
-    /// In a recursive descent parser, the least priority rule is matched first
-    /// as we descend down into nested grammer rules
-    /// equality → comparison ( ( "!=" | "==" ) comparison )* ;
-
+    /// *expression*  → `equality`
     fn expression(&mut self) -> Box<Expression> {
         self.equality()
     }
+    /// *equality*    → `comparsion ("==" | "!=" comparison)*;`
     fn equality(&mut self) -> Box<Expression> {
-        use crate::_lox_::tokenizer::token_type::TokenType::*;
-
+        // This creates a left associative nested tree of binary operator nodes
+        // The previous `expr` becomes the new `left` of an equality expression if matches returns true
         let mut expr = self.comparison();
         while self.matches(vec![BANG_EQUAL, EQUAL_EQUAL]) {
             let operator: Token = self
@@ -263,9 +261,82 @@ impl Parser {
         }
         expr
     }
-
+    /// *comparison*  → `term ("<="|"<"|">"|">=" term)*;`
     fn comparison(&mut self) -> Box<Expression> {
-        todo!()
+        let mut expr = self.term();
+        while self.matches(vec![LESS, LESS_EQUAL, GREATER, GREATER_EQUAL]) {
+            let operator: Token = self
+                .previous
+                .clone()
+                .expect("matches will ensure this field to be something");
+            let right = self.term();
+            expr = Box::new(Expression::BinExp(BinaryExpr::new(
+                expr, operator, right,
+            )));
+        }
+        expr
+    }
+    /// *term*        → `factor ("+"|"-" factor)*;`
+    fn term(&mut self) -> Box<Expression> {
+        let mut expr = self.factor();
+        while self.matches(vec![MINUS, PLUS]) {
+            let operator: Token = self
+                .previous
+                .clone()
+                .expect("matches will ensure this field to be something");
+            let right = self.factor();
+            expr = Box::new(Expression::BinExp(BinaryExpr::new(
+                expr, operator, right,
+            )));
+        }
+        expr
+    }
+    /// *factor*      → `unary (( "/" | "*" ) unary )*;`
+    fn factor(&mut self) -> Box<Expression> {
+        let mut expr = self.unary();
+        while self.matches(vec![STAR, SLASH]) {
+            let operator: Token = self
+                .previous
+                .clone()
+                .expect("matches will ensure this field to be something");
+            let right = self.unary();
+            expr = Box::new(Expression::BinExp(BinaryExpr::new(
+                expr, operator, right,
+            )));
+        }
+        expr
+    }
+    /// *unary*       → `("-" | "!") unary | primary;`
+    fn unary(&mut self) -> Box<Expression> {
+        if self.matches(vec![MINUS, BANG]) {
+            let operator: Token = self
+                .previous
+                .clone()
+                .expect("matches will ensure this field to be something");
+            let right_expr = self.unary();
+            return Box::new(Expression::UnExp(
+                UnaryExpr::new(operator, right_expr)
+                    .expect("Scanner should catch these errors"),
+            ));
+        }
+        self.primary()
+    }
+    /// *primary*     → `literal | "(" expression ")";`
+    /// *literal*     → Number | String | "true" | "false" | "nil" ;
+    fn primary(&mut self) -> Box<Expression> {
+        if self.matches(vec![FALSE, TRUE, NIL, NUMBER, STRING]) {
+            Box::new(Expression::Lit(
+                Literal::new(self.previous.clone().unwrap()).unwrap(),
+            ))
+        } else if self.matches(vec![LEFT_PAREN]) {
+            let expr = self.expression();
+            let _expect_right_paren = self
+                .consume(RIGHT_PAREN)
+                .expect("Expect ')' after expression");
+            Box::new(Expression::Group(Grouping::new(expr)))
+        } else {
+            panic!("Cannot parse as primary expression");
+        }
     }
 }
 impl Parser {
@@ -276,20 +347,18 @@ impl Parser {
             previous: None,
         }
     }
-    /// Searches the current token iterator for a match in the list of searchable token types passed to it
-    /// For instance in the comparison rule, we may want to check a multitude of tokentypes for a comparision, so we can pass all comparison operators in the searchable list and if we get a yes back from this function,
-    /// it means that we must call the comparision rule again
+    /// Peeks the current token iterator for a match in the list of searchable token types passed to it
+    /// For instance in the comparison rule, we may want to check a multitude of tokentypes('<','<=',...) for a comparision,
+    /// so we can pass all comparison operators in the searchable list and if we get a yes back from this function,
+    /// it means that we must call the comparision rule again, otherwise we are done with comparison expressions and must
+    /// "descend" down the grammar rule list to *term* and so on
     fn matches(&mut self, searchable_list: Vec<TokenType>) -> bool {
-        todo!("Requires nuanced thinking");
-        let mut n = 0;
-        while let Some(peeked_token) = self.tokens.peek_n(n) {
-            let ref peeked_type = peeked_token.r#type;
-            if searchable_list.contains(peeked_type) {
-                self.advance();
-                return true;
-            } else {
-                n += 1;
-            }
+        if self.is_at_end() {
+            return false;
+        }
+        if let Some(peeked_token) = self.tokens.peek() && searchable_list.contains(&peeked_token.r#type) {
+            self.advance();
+            return true;
         }
         false
     }
@@ -303,7 +372,24 @@ impl Parser {
         self.previous.clone()
     }
     fn is_at_end(&mut self) -> bool {
-        if let Some(peeked_token) = self.tokens.peek() && peeked_token.r#type == TokenType::EOF { return true;}
+        if let Some(peeked_token) = self.tokens.peek() && peeked_token.r#type == EOF { return true;}
         false
+    }
+
+    fn consume(&mut self, expected_token: TokenType) -> Option<Token> {
+        if let Some(peeked_token) = self.tokens.peek() && expected_token == peeked_token.r#type {
+            return self.advance();
+        }
+        None
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    #[ignore = "unimplemented"]
+    #[test]
+    fn parser_test_simple_expression() {
+        
     }
 }
