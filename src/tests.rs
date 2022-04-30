@@ -3,6 +3,7 @@ use crate::_lox_::lox::Lox;
 use crate::_lox_::parser::Parser;
 use crate::_lox_::tokenizer::scanner::*;
 
+
 #[cfg(test)]
 mod tokenizer_tests {
     use super::*;
@@ -109,17 +110,17 @@ adsadasdasdasd
 #[cfg(test)]
 mod parser_tests {
     // TODO: Extract this macro out of this module
-    macro_rules! setup_lox {
-        ($e:literal) => {{
-            let src = String::from($e);
-            let mut lox = Lox::new(src.clone());
-            let mut scanner = Scanner::new(&src, &mut lox);
-            scanner.scan_tokens();
-            scanner.tokens
-        }};
-    }
+    // macro_rules! setup_lox {
+    //     ($e:literal) => {{
+    //         let src = String::from($e);
+    //         let mut lox = Lox::new(src.clone());
+    //         let mut scanner = Scanner::new(&src, &mut lox);
+    //         scanner.scan_tokens();
+    //         scanner.tokens
+    //     }};
+    // }
     use crate::_lox_::parser::error::ParserError;
-    
+    use crate::setup_lox; 
     use super::*;
     #[test]
     fn term_expression() {
@@ -195,14 +196,13 @@ mod parser_tests {
         assert!(res.is_ok());
     }
 }
-// #[macro_use]
-// macro_rules! setup_lox {
-    //     ($src:literal) => {
-        //         let src = String::from($src);
-        //         let mut lox = Lox::new(src);
-        //         let mut scanner = Scanner::new(&source, &mut lox);
-        //         scanner.scan_tokens();
-        //         scanner.tokens
-        //     };
-        // }
-        
+#[macro_export]
+macro_rules! setup_lox {
+    ($e:literal) => {{
+        let src = String::from($e);
+        let mut lox = Lox::new(src.clone());
+        let mut scanner = Scanner::new(&src, &mut lox);
+        scanner.scan_tokens();
+        scanner.tokens
+    }};
+}
