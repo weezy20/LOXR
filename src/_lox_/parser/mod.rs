@@ -189,6 +189,11 @@ use better_peekable::{BPeekable, BetterPeekable};
 use expressions::Expression;
 use std::vec::IntoIter;
 
+use self::error::ParserError;
+
+/// ParserError
+pub mod error;
+
 /// Definition for Expression enum, and types that are Expression
 pub mod traits;
 
@@ -241,101 +246,117 @@ pub struct Parser {
 /// as we descend down into nested grammer rules
 impl Parser {
     /// *expression*  → `equality`
-    fn expression(&mut self) -> Box<Expression> {
+    pub fn expression(&mut self) -> Result<Box<Expression>, ParserError> {
         self.equality()
     }
     /// *equality*    → `comparsion ("==" | "!=" comparison)*;`
-    fn equality(&mut self) -> Box<Expression> {
+    pub fn equality(&mut self) -> Result<Box<Expression>, ParserError> {
         // This creates a left associative nested tree of binary operator nodes
         // The previous `expr` becomes the new `left` of an equality expression if matches returns true
-        let mut expr = self.comparison();
+        let mut expr = self.comparison()?;
         while self.matches(vec![BANG_EQUAL, EQUAL_EQUAL]) {
             let operator: Token = self
                 .previous
                 .clone()
                 .expect("matches will ensure this field to be something");
-            let right = self.comparison();
+            let right = self.comparison()?;
             expr = Box::new(Expression::BinExp(BinaryExpr::new(
                 expr, operator, right,
             )));
         }
-        expr
+        Ok(expr)
     }
     /// *comparison*  → `term ("<="|"<"|">"|">=" term)*;`
-    fn comparison(&mut self) -> Box<Expression> {
-        let mut expr = self.term();
+    pub fn comparison(&mut self) -> Result<Box<Expression>, ParserError> {
+        let mut expr = self.term()?;
         while self.matches(vec![LESS, LESS_EQUAL, GREATER, GREATER_EQUAL]) {
             let operator: Token = self
                 .previous
                 .clone()
                 .expect("matches will ensure this field to be something");
-            let right = self.term();
+            let right = self.term()?;
             expr = Box::new(Expression::BinExp(BinaryExpr::new(
                 expr, operator, right,
             )));
         }
-        expr
+        Ok(expr)
     }
     /// *term*        → `factor ("+"|"-" factor)*;`
-    fn term(&mut self) -> Box<Expression> {
-        let mut expr = self.factor();
+    pub fn term(&mut self) -> Result<Box<Expression>, ParserError> {
+        let mut expr = self.factor()?;
         while self.matches(vec![MINUS, PLUS]) {
             let operator: Token = self
                 .previous
                 .clone()
                 .expect("matches will ensure this field to be something");
-            let right = self.factor();
+            let right = self.factor()?;
             expr = Box::new(Expression::BinExp(BinaryExpr::new(
                 expr, operator, right,
             )));
         }
-        expr
+        Ok(expr)
     }
     /// *factor*      → `unary (( "/" | "*" ) unary )*;`
-    fn factor(&mut self) -> Box<Expression> {
-        let mut expr = self.unary();
+    pub fn factor(&mut self) -> Result<Box<Expression>, ParserError> {
+        let mut expr = self.unary()?;
         while self.matches(vec![STAR, SLASH]) {
             let operator: Token = self
                 .previous
                 .clone()
                 .expect("matches will ensure this field to be something");
-            let right = self.unary();
+            let right = self.unary()?;
             expr = Box::new(Expression::BinExp(BinaryExpr::new(
                 expr, operator, right,
             )));
         }
-        expr
+        Ok(expr)
     }
     /// *unary*       → `("-" | "!") unary | primary;`
-    fn unary(&mut self) -> Box<Expression> {
+    pub fn unary(&mut self) -> Result<Box<Expression>, ParserError> {
         if self.matches(vec![MINUS, BANG]) {
             let operator: Token = self
                 .previous
                 .clone()
                 .expect("matches will ensure this field to be something");
-            let right_expr = self.unary();
-            return Box::new(Expression::UnExp(
+            let right_expr = self.unary()?;
+            return Ok(Box::new(Expression::UnExp(
                 UnaryExpr::new(operator, right_expr)
                     .expect("Scanner should catch these errors"),
-            ));
+            )));
         }
         self.primary()
     }
     /// *primary*     → `literal | "(" expression ")";`
     /// *literal*     → Number | String | "true" | "false" | "nil" ;
-    fn primary(&mut self) -> Box<Expression> {
+    pub fn primary(&mut self) -> Result<Box<Expression>, ParserError> {
         if self.matches(vec![FALSE, TRUE, NIL, NUMBER, STRING]) {
-            Box::new(Expression::Lit(
+            // Previous is sure to exist if this branch is entered
+            // Also constructing a literal is infallible at this stage
+            Ok(Box::new(Expression::Lit(
                 Literal::new(self.previous.clone().unwrap()).unwrap(),
-            ))
+            )))
         } else if self.matches(vec![LEFT_PAREN]) {
-            let expr = self.expression();
+            let expr = self.expression()?;
+
             let _expect_right_paren = self
                 .consume(RIGHT_PAREN)
-                .expect("Expect ')' after expression");
-            Box::new(Expression::Group(Grouping::new(expr)))
+                .ok_or_else(|| ParserError::UnbalancedParen)?;
+            // .expect("Expect ')' after expression");
+            Ok(Box::new(Expression::Group(Grouping::new(expr))))
         } else {
-            panic!("Cannot parse as primary expression");
+            // "Each token must be matched by now, if not, the parser may have not understand where the Token
+            // fits into the grammar production after falling from expression upto token, in which case we have to write code
+            // to handle that, or the Token is simply in the wrong place and a parser error should be reported "
+            // panic!("Cannot parse as primary expression");
+            if !self.is_at_end() {
+                Err(ParserError::InvalidToken(self.tokens.peek().cloned()))
+            }
+            // The next token is EOF and therefore we've run out of tokens to parse
+            else {
+                // self.is_at_end == true and a primary expression is being searched for, but since is_at_end == true,
+                // the next token is EOF, and therefore the expression is ill-formed
+                Err(ParserError::MissingOperand)
+            }
         }
     }
 }
@@ -375,7 +396,7 @@ impl Parser {
         if let Some(peeked_token) = self.tokens.peek() && peeked_token.r#type == EOF { return true;}
         false
     }
-
+    /// Consume the token iff it matches the `expected_token` and return it
     fn consume(&mut self, expected_token: TokenType) -> Option<Token> {
         if let Some(peeked_token) = self.tokens.peek() && expected_token == peeked_token.r#type {
             return self.advance();
@@ -384,12 +405,9 @@ impl Parser {
     }
 }
 
-
-#[cfg(test)]
-mod tests {
-    #[ignore = "unimplemented"]
-    #[test]
-    fn parser_test_simple_expression() {
-        
+impl Parser {
+    /// Starts the parser
+    pub fn run(&mut self) -> Result<Box<Expression>, ParserError> {
+        self.expression()
     }
 }

@@ -62,7 +62,7 @@ pub struct Literal {
 impl Literal {
     pub fn new(inner: Token) -> Result<Self, String> {
         let token_type = inner.r#type;
-        if token_type.is_literal() {
+        if token_type.is_primary() {
             Ok(Self { inner })
         } else {
             Err(format!(

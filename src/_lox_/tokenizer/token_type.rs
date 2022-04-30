@@ -55,9 +55,11 @@ pub enum TokenType {
 
 use crate::_lox_::tokenizer::token_type::TokenType::*;
 impl TokenType {
-    pub fn is_literal(&self) -> bool {
+    /// Check if the literal is a primary as in contains a name, number, string, boolean, or nil 
+    /// This may be subject to change as the parser progresses or maybe removed entirely
+    pub fn is_primary(&self) -> bool {
         match self {
-           STRING | IDENTIFIER | NUMBER => true,
+           NIL | FALSE | TRUE | STRING | IDENTIFIER | NUMBER => true,
            _ => false
         }
     }
@@ -120,16 +122,3 @@ impl Default for TokenType {
     }
 }
 
-#[cfg(test)]
-mod token_type_tests {
-    use super::*;
-    #[test]
-    fn test_is_literal() {
-        let s = STRING;
-        let id = IDENTIFIER;
-        let num = NUMBER;
-        assert!(s.is_literal());
-        assert!(id.is_literal());
-        assert!(num.is_literal());
-    }
-}

@@ -1,4 +1,6 @@
 #![allow(warnings, unused)]
+use crate::_lox_::parser::Parser;
+
 use super::tokenizer::scanner::Scanner;
 #[derive(Debug)]
 pub struct Lox {
@@ -26,6 +28,8 @@ impl Lox {
             .iter()
             .map(|t| t.to_string())
             .for_each(|tr| println!("{tr}"));
+        let parser = Parser::new(tokens);
+
         return;
         todo!(
             "
