@@ -18,7 +18,10 @@ impl Lox {
             src,
         }
     }
-
+    /// Report `message` as error on `line`
+    pub fn report_err(line: usize, col: usize, message: String) {
+        eprintln!("Syntax Error: {message} at line {line}, column {col}");
+    }
     /// Parse a `lox` string as `lox` tokens and run them
     pub fn run(&mut self, src: String) {
         let mut scanner = Scanner::new(&src, self);
@@ -28,8 +31,13 @@ impl Lox {
             .iter()
             .map(|t| t.to_string())
             .for_each(|tr| println!("{tr}"));
-        let parser = Parser::new(tokens);
-
+        let mut parser = Parser::new(tokens);
+        match parser.run() {
+            Ok(std) => println!("Successfully parsed"),
+            Err(_) => {
+                self.had_error = true;
+            }
+        }
         return;
         todo!(
             "
@@ -39,10 +47,5 @@ impl Lox {
             ast.evaluate();
         "
         );
-    }
-
-    /// Report `message` as error on `line`
-    pub fn report_err(line: usize, message: String, col: usize) {
-        eprintln!("Syntax Error: {message} at line {line}, column {col}");
     }
 }

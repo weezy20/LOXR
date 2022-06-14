@@ -182,7 +182,9 @@ impl<'a, 'b> Scanner<'a, 'b> {
                     let mut comment = true;
                     while comment {
                         if self.peek().is_some() && self.peek_next().is_some() {
-                            if self.peek().unwrap() == '*' && self.peek_next().unwrap() == '/' {
+                            if self.peek().unwrap() == '*'
+                                && self.peek_next().unwrap() == '/'
+                            {
                                 self.advance();
                                 self.advance();
                                 comment = false;
@@ -197,7 +199,11 @@ impl<'a, 'b> Scanner<'a, 'b> {
                                 self.advance();
                             }
                             // EOF
-                            Lox::report_err(self.line, format!("Unclosed comment"), self.col);
+                            Lox::report_err(
+                                self.line,
+                                self.col,
+                                format!("Unclosed comment"),
+                            );
                             comment = false;
                         }
                     }
@@ -238,8 +244,8 @@ impl<'a, 'b> Scanner<'a, 'b> {
                 self.lox.had_error = true;
                 Lox::report_err(
                     self.line,
-                    format!("Unexpected character {q}{unexpected}{q}"),
                     self.col,
+                    format!("Unexpected character {q}{unexpected}{q}"),
                 );
             }
         }
@@ -281,7 +287,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
             } else if self.is_at_end() {
                 let message = format!("Unclosed string");
                 self.lox.had_error = true;
-                Lox::report_err(self.line, message, self.col)
+                Lox::report_err(self.line, self.col, message)
             }
         }
     }
@@ -314,11 +320,11 @@ impl<'a, 'b> Scanner<'a, 'b> {
                 self.lox.had_error = true;
                 Lox::report_err(
                     self.line,
+                    self.col,
                     format!(
                         "Unexpected character '{c}' at numeric boundary for {}",
                         &self.source[self.start..self.current]
                     ),
-                    self.col,
                 );
             }
         }

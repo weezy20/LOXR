@@ -191,6 +191,7 @@ use std::vec::IntoIter;
 
 use self::error::ParserError;
 
+use super::lox::Lox;
 /// ParserError
 pub mod error;
 
@@ -257,12 +258,10 @@ impl Parser {
         while self.matches(vec![BANG_EQUAL, EQUAL_EQUAL]) {
             let operator: Token = self
                 .previous
-                .clone()
+                .take()
                 .expect("matches will ensure this field to be something");
             let right = self.comparison()?;
-            expr = Box::new(Expression::BinExp(BinaryExpr::new(
-                expr, operator, right,
-            )));
+            expr = Box::new(Expression::BinExp(BinaryExpr::new(expr, operator, right)));
         }
         Ok(expr)
     }
@@ -272,12 +271,11 @@ impl Parser {
         while self.matches(vec![LESS, LESS_EQUAL, GREATER, GREATER_EQUAL]) {
             let operator: Token = self
                 .previous
-                .clone()
+                .take()
+                // .clone()
                 .expect("matches will ensure this field to be something");
             let right = self.term()?;
-            expr = Box::new(Expression::BinExp(BinaryExpr::new(
-                expr, operator, right,
-            )));
+            expr = Box::new(Expression::BinExp(BinaryExpr::new(expr, operator, right)));
         }
         Ok(expr)
     }
@@ -286,13 +284,11 @@ impl Parser {
         let mut expr = self.factor()?;
         while self.matches(vec![MINUS, PLUS]) {
             let operator: Token = self
-                .previous
-                .clone()
-                .expect("matches will ensure this field to be something");
+            .previous
+            .take()
+            .expect("matches will ensure this field to be something");
             let right = self.factor()?;
-            expr = Box::new(Expression::BinExp(BinaryExpr::new(
-                expr, operator, right,
-            )));
+            expr = Box::new(Expression::BinExp(BinaryExpr::new(expr, operator, right)));
         }
         Ok(expr)
     }
@@ -301,13 +297,11 @@ impl Parser {
         let mut expr = self.unary()?;
         while self.matches(vec![STAR, SLASH]) {
             let operator: Token = self
-                .previous
-                .clone()
-                .expect("matches will ensure this field to be something");
+            .previous
+            .take()
+            .expect("matches will ensure this field to be something");
             let right = self.unary()?;
-            expr = Box::new(Expression::BinExp(BinaryExpr::new(
-                expr, operator, right,
-            )));
+            expr = Box::new(Expression::BinExp(BinaryExpr::new(expr, operator, right)));
         }
         Ok(expr)
     }
@@ -315,13 +309,13 @@ impl Parser {
     pub fn unary(&mut self) -> Result<Box<Expression>, ParserError> {
         if self.matches(vec![MINUS, BANG]) {
             let operator: Token = self
-                .previous
-                .clone()
-                .expect("matches will ensure this field to be something");
+            .previous
+            .take()
+            .expect("matches will ensure this field to be something");
             let right_expr = self.unary()?;
             return Ok(Box::new(Expression::UnExp(
                 UnaryExpr::new(operator, right_expr)
-                    .expect("Scanner should catch these errors"),
+                .expect("Scanner should catch malformed unary expressions"),
             )));
         }
         self.primary()
@@ -329,18 +323,32 @@ impl Parser {
     /// *primary*     → `literal | "(" expression ")";`
     /// *literal*     → Number | String | "true" | "false" | "nil" ;
     pub fn primary(&mut self) -> Result<Box<Expression>, ParserError> {
+        // "1+3+4(3+4)"
         if self.matches(vec![FALSE, TRUE, NIL, NUMBER, STRING]) {
             // Previous is sure to exist if this branch is entered
             // Also constructing a literal is infallible at this stage
+            let p = self.previous.clone().expect("Previous should have something here");
+            if let Some(peeked_token) = self.peek() {
+                match peeked_token.r#type {
+                    // LEFT_PAREN | LEFT_BRACE | LEFT_SQUARE | RIGHT_BRACE | RIGHT_PAREN | RIGHT_SQUARE => {
+                    //     Lox::report_err(
+                    //         peeked_token.line_number, 
+                    //         peeked_token.col, 
+                    //         format!("Unexpected token {peeked_token:#?} after {p:#?}")
+                    //     );
+                    //     return Err(ParserError::InvalidToken(Some(peeked_token).cloned()));
+                    // }
+                    _ => {}
+                }
+            }
             Ok(Box::new(Expression::Lit(
-                Literal::new(self.previous.clone().unwrap()).unwrap(),
+                Literal::new(self.previous.take().unwrap()).unwrap(),
             )))
         } else if self.matches(vec![LEFT_PAREN]) {
             let expr = self.expression()?;
-
-            let _expect_right_paren = self
-                .consume(RIGHT_PAREN)
-                .ok_or_else(|| ParserError::UnbalancedParen)?;
+            let _expect_right_paren = self.consume(RIGHT_PAREN)?;
+            // This assertion should never fail
+            assert!(_expect_right_paren.is_some());
             // .expect("Expect ')' after expression");
             Ok(Box::new(Expression::Group(Grouping::new(expr))))
         } else {
@@ -355,20 +363,13 @@ impl Parser {
             else {
                 // self.is_at_end == true and a primary expression is being searched for, but since is_at_end == true,
                 // the next token is EOF, and therefore the expression is ill-formed
-                Err(ParserError::MissingOperand)
+                Err(ParserError::UnexpectedExpression)
             }
         }
     }
 }
 impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Self {
-        Self {
-            tokens: tokens.into_iter().better_peekable(),
-            current: 0_usize,
-            previous: None,
-        }
-    }
-    /// Peeks the current token iterator for a match in the list of searchable token types passed to it
+    /// Peeks the current token iterator for a match in the list of searchable token types passed to it.
     /// For instance in the comparison rule, we may want to check a multitude of tokentypes('<','<=',...) for a comparision,
     /// so we can pass all comparison operators in the searchable list and if we get a yes back from this function,
     /// it means that we must call the comparision rule again, otherwise we are done with comparison expressions and must
@@ -378,13 +379,16 @@ impl Parser {
             return false;
         }
         if let Some(peeked_token) = self.tokens.peek() && searchable_list.contains(&peeked_token.r#type) {
-            self.advance();
+            let _ = self.advance();
             return true;
         }
         false
     }
     /// Increment the `current` index and consume a token from the Parser's `tokens` list
-    ///  returning the token that was just consumed OR, in the case that we have reached EOF or an abrupt end of tokens in our `tokens` list, we just send the previous cached token
+    /// returning the token that was just consumed OR, in the case that we have reached EOF or
+    /// an abrupt end of tokens in our `tokens` list, we just send the previous cached token
+    /// More likely than not, this would be a None variant as we our expression parsing rules now
+    /// `take()` instead of `clone()`. This does not matter as we are using this function internally.
     fn advance(&mut self) -> Option<Token> {
         if let Some(_) = self.tokens.peek() && !self.is_at_end() {
             self.current += 1;
@@ -396,16 +400,72 @@ impl Parser {
         if let Some(peeked_token) = self.tokens.peek() && peeked_token.r#type == EOF { return true;}
         false
     }
-    /// Consume the token iff it matches the `expected_token` and return it
-    fn consume(&mut self, expected_token: TokenType) -> Option<Token> {
+    fn peek(&mut self) -> Option<&Token> {
+        self.tokens.peek()
+    }
+    /// Consume the token if & only if it matches the `expected_token` and return it, otherwise report an error,
+    /// and return a `ParserError`. 
+    fn consume(
+        &mut self,
+        expected_token: TokenType,
+    ) -> Result<Option<Token>, ParserError> {
+
         if let Some(peeked_token) = self.tokens.peek() && expected_token == peeked_token.r#type {
-            return self.advance();
+            return Ok(self.advance());
         }
-        None
+        else if let Some(peeked_token) = self.tokens.peek() { 
+            Lox::report_err(peeked_token.line_number, peeked_token.col, format!("Invalid Token {peeked_token:#?} encountered\nExpected {expected_token:#?}") );
+            Err(ParserError::InvalidToken(self.tokens.peek().cloned()))
+        } 
+        // None is peeked that means we are at EOF
+        else {
+            // self.previous is guaranteed to exist at this point because we haven't formed an expression yet
+            // and we are only peeking ahead to check if the right token follows. If this contract is violated it's a bug
+            // and should be reported as a interpreter/compiler internal error
+            assert!(self.previous.is_some(), "Internal Lox Error, expected parser.previous to be Some(_) found None");
+            let peeked_token = self.previous.clone().unwrap();
+            // We should enter this condition
+            if self.is_at_end() {
+                // This should report EOF in the error msg
+                Lox::report_err(peeked_token.line_number, peeked_token.col, format!("Unexpected end of file, found {:#?}", peeked_token.r#type));
+            }
+            Err(ParserError::UnexpectedExpression)
+        }
+    }
+    /// This function is called in the event of a `ParserError`. Handlers of `ParserError` can call this function
+    /// to discard the current erroneous Token stream until a synchronization boundary is met. In our case we are using
+    /// a `Statement` or Semicolon as a synchronization boundary because it's easy to spot.
+    /// Most statements start with `for`, `if`, `return`, `var` etc so we can use this info to mark a synchronization boundary.
+    fn synchronize(&mut self) {
+        self.advance();
+        while !self.is_at_end() {
+            // After a semicolon, a Statement ends
+            if let Some(previous_token) = &self.previous && previous_token.r#type == SEMICOLON {
+                return;
+            }
+            if let Some(token) = self.peek() {
+                match token.r#type {
+                    // Keywords that mark the beginning of a new Statement
+                   CLASS | FUN | VAR | FOR | IF | WHILE | PRINT | RETURN => 
+                   {
+                    return;
+                   }
+                   _ => {}
+                }
+            }
+            self.advance();
+        }
     }
 }
 
 impl Parser {
+    pub fn new(tokens: Vec<Token>) -> Self {
+        Self {
+            tokens: tokens.into_iter().better_peekable(),
+            current: 0_usize,
+            previous: None,
+        }
+    }
     /// Starts the parser
     pub fn run(&mut self) -> Result<Box<Expression>, ParserError> {
         self.expression()
