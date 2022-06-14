@@ -11,6 +11,7 @@ use crate::_lox_::tokenizer::token_type::TokenType;
 
 #[derive(PartialEq, Debug)]
 pub enum Expression {
+    CommaExpr(Vec<Box<Expression>>),
     BinExp(BinaryExpr),
     UnExp(UnaryExpr),
     Lit(Literal),
@@ -93,7 +94,7 @@ mod test {
 
     #[test]
     fn pretty_print() {
-        let expression = " 1 + (2 - (4 / 5))";
+        let _expression = " 1 + (2 - (4 / 5))";
         let (line_number, col) = (1, 1);
         let one = Expression::Lit(
             Literal::new(Token::new(

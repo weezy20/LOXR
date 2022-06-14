@@ -3,8 +3,6 @@ use super::expressions::*;
 use crate::_lox_::tokenizer::{token::Token, token_type::TokenType};
 use std::fmt::Debug;
 
-
-
 /// Helper struct to store info for Expressions expansion
 #[derive(Default)]
 pub struct Metadata {
@@ -31,6 +29,11 @@ impl ExpressionPrinter for Expression {
             Expression::UnExp(e) => e.print(),
             Expression::Lit(e) => e.print(),
             Expression::Group(e) => e.print(),
+            Expression::CommaExpr(e) => e
+                .iter()
+                .map(|expr| expr.print())
+                .collect::<Vec<String>>()
+                .join(" --COMMA EXPR-- "),
         }
     }
 }

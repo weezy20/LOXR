@@ -1,6 +1,7 @@
 use thiserror::Error;
 
 use crate::_lox_::tokenizer::token::Token;
+#[allow(unused)]
 #[derive(Error, Debug, PartialEq)]
 pub enum ParserError {
     #[error("Parenthesis mismatch")]

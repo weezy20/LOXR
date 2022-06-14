@@ -1,3 +1,4 @@
+#![allow(unused, warnings)]
 #![cfg(test)]
 use crate::_lox_::lox::Lox;
 use crate::_lox_::parser::Parser;
@@ -120,6 +121,7 @@ mod parser_tests {
     // }
     use super::*;
     use crate::_lox_::parser::error::ParserError;
+    use crate::_lox_::parser::traits::ExpressionPrinter;
     use crate::setup_lox;
     #[test]
     fn term_expression() {
@@ -178,7 +180,7 @@ mod parser_tests {
             })))
         );
     }
-    #[ignore = "Lox cannot handle beyond simple arithmetic expressions at this point"]
+    // #[ignore = "Lox cannot handle beyond simple arithmetic expressions at this point"]
     #[test]
     fn illegal_expressions() {
         // The first two are legal but unimplemented
@@ -188,12 +190,18 @@ mod parser_tests {
         // TODO
         // Note these are entirely different expressions yet the assertion passes if you run this
         let tokens1 = setup_lox!("1+3+4x(3+4)"); // illegal
-        let tokens2 = setup_lox!("1+3+4(3+4)"); // illegal
         let res1 = Parser::new(tokens1).run();
+        let tokens2 = setup_lox!("1+3+4(3+4)"); // illegal
         let res2 = Parser::new(tokens2).run();
-        println!("res1: {res1:#?}");
-        println!("res2: {res2:#?}");
+        // println!("res1: {res1:#?}");
+        // println!("res2: {res2:#?}");
         assert_eq!(res1, res2);
+    }
+    #[test]
+    fn incomplete_expressions() {
+        let tokens = setup_lox!("1+");
+        let res = Parser::new(tokens).run();
+        assert_eq!(res, Err(ParserError::UnexpectedExpression));
     }
     #[test]
     fn legal_expressions() {
@@ -215,6 +223,12 @@ mod parser_tests {
         let res = Parser::new(tokens).run();
         assert!(res.is_ok());
     }
+    #[test]
+    fn comma_expression_print() {
+        let tokens = setup_lox!("1+2, 3-23, 4/5");
+        let res = Parser::new(tokens).run().unwrap();
+        println!("{}", res.print());
+    }   
 }
 #[macro_export]
 macro_rules! setup_lox {

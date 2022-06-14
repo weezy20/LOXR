@@ -202,6 +202,9 @@ pub mod traits;
 pub mod expressions;
 
 /// Parser grammar:
+/// A comma expression evaluates to the final expression
+/// *comma expr*     → `expression , (expression)* | "(" expression ")"`;
+/// 
 ///
 /// *expression*     → `literal
 ///                  | unary
@@ -246,6 +249,16 @@ pub struct Parser {
 /// In a recursive descent parser, the least priority rule is matched first
 /// as we descend down into nested grammer rules
 impl Parser {
+     /// *comma expr* → `expression , (expression)* | "(" expression ")"`;
+     pub fn comma_expression(&mut self) -> Result<Box<Expression>, ParserError> {
+        let expr = self.expression()?;
+        let mut expr_list: Vec<Box<Expression>> = vec![expr];
+        while self.matches(vec![COMMA] ) {
+            let next = self.expression()?;
+            expr_list.push(next);
+        }
+        Ok(Box::new(Expression::CommaExpr(expr_list)))
+    }
     /// *expression*  → `equality`
     pub fn expression(&mut self) -> Result<Box<Expression>, ParserError> {
         self.equality()
@@ -327,7 +340,7 @@ impl Parser {
         if self.matches(vec![FALSE, TRUE, NIL, NUMBER, STRING]) {
             // Previous is sure to exist if this branch is entered
             // Also constructing a literal is infallible at this stage
-            let p = self.previous.clone().expect("Previous should have something here");
+            let _p = self.previous.clone().expect("Previous should have something here");
             if let Some(peeked_token) = self.peek() {
                 match peeked_token.r#type {
                     // LEFT_PAREN | LEFT_BRACE | LEFT_SQUARE | RIGHT_BRACE | RIGHT_PAREN | RIGHT_SQUARE => {
@@ -468,6 +481,6 @@ impl Parser {
     }
     /// Starts the parser
     pub fn run(&mut self) -> Result<Box<Expression>, ParserError> {
-        self.expression()
+        self.comma_expression()
     }
 }

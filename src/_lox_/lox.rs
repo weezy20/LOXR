@@ -33,7 +33,7 @@ impl Lox {
             .for_each(|tr| println!("{tr}"));
         let mut parser = Parser::new(tokens);
         match parser.run() {
-            Ok(std) => println!("Successfully parsed"),
+            Ok(std) => println!("Successfully parsed: {std:#?}"),
             Err(_) => {
                 self.had_error = true;
             }
