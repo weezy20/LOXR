@@ -34,6 +34,17 @@ impl ExpressionPrinter for Expression {
                 .map(|expr| expr.print())
                 .collect::<Vec<String>>()
                 .join(" --COMMA EXPR-- "),
+            Expression::TernExp(e) => {
+                let mut result = format!("Ternary Expression\n");
+                result.push_str(&format!("Condition: {}", &e.condition.print()));
+                result
+                    .push_str(&format!("If Condtion true eval: {}", &e.if_true.print()));
+                result.push_str(&format!(
+                    "If Condtion false eval: {}",
+                    &e.if_false.print()
+                ));
+                result
+            }
         }
     }
 }

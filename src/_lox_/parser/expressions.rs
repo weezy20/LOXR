@@ -12,10 +12,18 @@ use crate::_lox_::tokenizer::token_type::TokenType;
 #[derive(PartialEq, Debug)]
 pub enum Expression {
     CommaExpr(Vec<Box<Expression>>),
+    TernExp(TernaryExpr),
     BinExp(BinaryExpr),
     UnExp(UnaryExpr),
     Lit(Literal),
     Group(Grouping),
+}
+
+#[derive(Debug, PartialEq)]
+pub struct TernaryExpr {
+    pub condition: Box<Expression>,
+    pub if_true : Box<Expression>,
+    pub if_false : Box<Expression>,
 }
 
 #[derive(Debug, PartialEq)]

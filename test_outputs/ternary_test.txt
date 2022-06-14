@@ -1,0 +1,273 @@
+
+running 2 tests
+4 == 5? 1 < 2 ? 1 : 2 : 3 -> 
+Ok(
+    TernExp(
+        TernaryExpr {
+            condition: BinExp(
+                BinaryExpr {
+                    left: Lit(
+                        Literal {
+                            inner: Token {
+                                type: NUMBER,
+                                lexeme: "4",
+                                line_number: 1,
+                                col: 1,
+                            },
+                        },
+                    ),
+                    operator: Token {
+                        type: EQUAL_EQUAL,
+                        lexeme: "==",
+                        line_number: 1,
+                        col: 3,
+                    },
+                    right: Lit(
+                        Literal {
+                            inner: Token {
+                                type: NUMBER,
+                                lexeme: "5",
+                                line_number: 1,
+                                col: 5,
+                            },
+                        },
+                    ),
+                },
+            ),
+            if_true: TernExp(
+                TernaryExpr {
+                    condition: BinExp(
+                        BinaryExpr {
+                            left: Lit(
+                                Literal {
+                                    inner: Token {
+                                        type: NUMBER,
+                                        lexeme: "1",
+                                        line_number: 1,
+                                        col: 8,
+                                    },
+                                },
+                            ),
+                            operator: Token {
+                                type: LESS,
+                                lexeme: "<",
+                                line_number: 1,
+                                col: 10,
+                            },
+                            right: Lit(
+                                Literal {
+                                    inner: Token {
+                                        type: NUMBER,
+                                        lexeme: "2",
+                                        line_number: 1,
+                                        col: 12,
+                                    },
+                                },
+                            ),
+                        },
+                    ),
+                    if_true: Lit(
+                        Literal {
+                            inner: Token {
+                                type: NUMBER,
+                                lexeme: "1",
+                                line_number: 1,
+                                col: 16,
+                            },
+                        },
+                    ),
+                    if_false: Lit(
+                        Literal {
+                            inner: Token {
+                                type: NUMBER,
+                                lexeme: "2",
+                                line_number: 1,
+                                col: 20,
+                            },
+                        },
+                    ),
+                },
+            ),
+            if_false: Lit(
+                Literal {
+                    inner: Token {
+                        type: NUMBER,
+                        lexeme: "3",
+                        line_number: 1,
+                        col: 24,
+                    },
+                },
+            ),
+        },
+    ),
+)
+4 == 5? 1 < 2 ? 44 < 55 ? 1 : 0 : -1 : -2 -> 
+Ok(
+    TernExp(
+        TernaryExpr {
+            condition: BinExp(
+                BinaryExpr {
+                    left: Lit(
+                        Literal {
+                            inner: Token {
+                                type: NUMBER,
+                                lexeme: "4",
+                                line_number: 1,
+                                col: 1,
+                            },
+                        },
+                    ),
+                    operator: Token {
+                        type: EQUAL_EQUAL,
+                        lexeme: "==",
+                        line_number: 1,
+                        col: 3,
+                    },
+                    right: Lit(
+                        Literal {
+                            inner: Token {
+                                type: NUMBER,
+                                lexeme: "5",
+                                line_number: 1,
+                                col: 5,
+                            },
+                        },
+                    ),
+                },
+            ),
+            if_true: TernExp(
+                TernaryExpr {
+                    condition: BinExp(
+                        BinaryExpr {
+                            left: Lit(
+                                Literal {
+                                    inner: Token {
+                                        type: NUMBER,
+                                        lexeme: "1",
+                                        line_number: 1,
+                                        col: 8,
+                                    },
+                                },
+                            ),
+                            operator: Token {
+                                type: LESS,
+                                lexeme: "<",
+                                line_number: 1,
+                                col: 10,
+                            },
+                            right: Lit(
+                                Literal {
+                                    inner: Token {
+                                        type: NUMBER,
+                                        lexeme: "2",
+                                        line_number: 1,
+                                        col: 12,
+                                    },
+                                },
+                            ),
+                        },
+                    ),
+                    if_true: TernExp(
+                        TernaryExpr {
+                            condition: BinExp(
+                                BinaryExpr {
+                                    left: Lit(
+                                        Literal {
+                                            inner: Token {
+                                                type: NUMBER,
+                                                lexeme: "44",
+                                                line_number: 1,
+                                                col: 16,
+                                            },
+                                        },
+                                    ),
+                                    operator: Token {
+                                        type: LESS,
+                                        lexeme: "<",
+                                        line_number: 1,
+                                        col: 19,
+                                    },
+                                    right: Lit(
+                                        Literal {
+                                            inner: Token {
+                                                type: NUMBER,
+                                                lexeme: "55",
+                                                line_number: 1,
+                                                col: 21,
+                                            },
+                                        },
+                                    ),
+                                },
+                            ),
+                            if_true: Lit(
+                                Literal {
+                                    inner: Token {
+                                        type: NUMBER,
+                                        lexeme: "1",
+                                        line_number: 1,
+                                        col: 26,
+                                    },
+                                },
+                            ),
+                            if_false: Lit(
+                                Literal {
+                                    inner: Token {
+                                        type: NUMBER,
+                                        lexeme: "0",
+                                        line_number: 1,
+                                        col: 30,
+                                    },
+                                },
+                            ),
+                        },
+                    ),
+                    if_false: UnExp(
+                        UnaryExpr {
+                            operator: Token {
+                                type: MINUS,
+                                lexeme: "-",
+                                line_number: 1,
+                                col: 34,
+                            },
+                            operand: Lit(
+                                Literal {
+                                    inner: Token {
+                                        type: NUMBER,
+                                        lexeme: "1",
+                                        line_number: 1,
+                                        col: 35,
+                                    },
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ),
+            if_false: UnExp(
+                UnaryExpr {
+                    operator: Token {
+                        type: MINUS,
+                        lexeme: "-",
+                        line_number: 1,
+                        col: 39,
+                    },
+                    operand: Lit(
+                        Literal {
+                            inner: Token {
+                                type: NUMBER,
+                                lexeme: "2",
+                                line_number: 1,
+                                col: 40,
+                            },
+                        },
+                    ),
+                },
+            ),
+        },
+    ),
+)
+test tests::parser_tests::check_nested_ternary_expression2 ... ok
+test tests::parser_tests::check_nested_ternary_expression ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 17 filtered out; finished in 0.01s
+

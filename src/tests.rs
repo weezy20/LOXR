@@ -109,16 +109,6 @@ adsadasdasdasd
 
 #[cfg(test)]
 mod parser_tests {
-    // TODO: Extract this macro out of this module
-    // macro_rules! setup_lox {
-    //     ($e:literal) => {{
-    //         let src = String::from($e);
-    //         let mut lox = Lox::new(src.clone());
-    //         let mut scanner = Scanner::new(&src, &mut lox);
-    //         scanner.scan_tokens();
-    //         scanner.tokens
-    //     }};
-    // }
     use super::*;
     use crate::_lox_::parser::error::ParserError;
     use crate::_lox_::parser::traits::ExpressionPrinter;
@@ -198,6 +188,29 @@ mod parser_tests {
         assert_eq!(res1, res2);
     }
     #[test]
+    fn check_ternary_expression() {
+        let tokens = setup_lox!("4 == 5? 1 : 0");
+        let res = Parser::new(tokens).run();
+        println!("{:#?}", res);
+        assert!(res.is_ok());
+    }
+    // #[ignore = "stack overflow"]
+    #[test]
+    fn check_nested_ternary_expression() {
+        let tokens = setup_lox!("4 == 5? 1 < 2 ? 44 < 55 ? 1 : 0 : -1 : -2");
+        let res = Parser::new(tokens).run();
+        println!("4 == 5? 1 < 2 ? 44 < 55 ? 1 : 0 : -1 : -2 -> \n{:#?}", res);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn check_nested_ternary_expression2() {
+        let tokens = setup_lox!("4 == 5? 1 < 2 ? 1 : 2 : 3");
+        let res = Parser::new(tokens).run();
+        println!("4 == 5? 1 < 2 ? 1 : 2 : 3 -> \n{:#?}", res);
+        assert!(res.is_ok());
+    }
+    #[test]
     fn incomplete_expressions() {
         let tokens = setup_lox!("1+");
         let res = Parser::new(tokens).run();
@@ -228,8 +241,9 @@ mod parser_tests {
         let tokens = setup_lox!("1+2, 3-23, 4/5");
         let res = Parser::new(tokens).run().unwrap();
         println!("{}", res.print());
-    }   
+    }
 }
+
 #[macro_export]
 macro_rules! setup_lox {
     ($e:literal) => {{

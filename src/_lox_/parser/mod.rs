@@ -204,7 +204,8 @@ pub mod expressions;
 /// Parser grammar:
 /// A comma expression evaluates to the final expression
 /// *comma expr*     → `expression , (expression)* | "(" expression ")"`;
-/// 
+///
+/// *ternary*        → `expression` ? `expression` : `expression`;
 ///
 /// *expression*     → `literal
 ///                  | unary
@@ -226,7 +227,9 @@ pub mod expressions;
 /// where top to bottom indicates the level of precedence of a given rule, top being matched the least
 /// and bottom being matched the first:
 ///
-/// *expression*  → `equality`
+/// *expression*  → `ternary`
+/// 
+/// *ternary*     → `equality` | `equality` ? : `equality`;
 ///
 /// *equality*    → `comparsion ("==" | "!=" comparison)*;`
 ///
@@ -257,11 +260,35 @@ impl Parser {
             let next = self.expression()?;
             expr_list.push(next);
         }
-        Ok(Box::new(Expression::CommaExpr(expr_list)))
+        if expr_list.len() > 1 {
+            Ok(Box::new(Expression::CommaExpr(expr_list)))
+        } else {
+            Ok(expr_list.pop().unwrap())
+        }
     }
     /// *expression*  → `equality`
     pub fn expression(&mut self) -> Result<Box<Expression>, ParserError> {
-        self.equality()
+        self.ternary()
+    }
+    /// *ternary*     → `equality` | `equality` ? : `equality`;
+    pub fn ternary(&mut self) -> Result<Box<Expression>, ParserError> {
+        let conditional_expr = self.equality()?;
+        while self.matches(vec![TERNARYC]) {
+            let left_expr = self.expression()?;
+            while self.matches(vec![TERNARYE]) {
+                let right_expr = self.expression()?;
+                return Ok(Box::new(Expression::TernExp(TernaryExpr {
+                    condition: conditional_expr,
+                    if_true: left_expr,
+                    if_false: right_expr,
+                })));
+            } 
+            let prev = self.previous.clone().expect("Matches will ensure something here");
+            Lox::report_err(prev.line_number, prev.col, "Invalid Ternary expression".into());
+            return Err(ParserError::UnexpectedExpression);
+        
+        }
+        Ok(conditional_expr)
     }
     /// *equality*    → `comparsion ("==" | "!=" comparison)*;`
     pub fn equality(&mut self) -> Result<Box<Expression>, ParserError> {

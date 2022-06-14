@@ -140,6 +140,8 @@ impl<'a, 'b> Scanner<'a, 'b> {
             '+' => self.add_token(TokenType::PLUS),
             '*' => self.add_token(TokenType::STAR),
             ';' => self.add_token(TokenType::SEMICOLON),
+            '?' => self.add_token(TokenType::TERNARYC),
+            ':' => self.add_token(TokenType::TERNARYE),
             ' ' | '\n' | '\t' | '\r' => {}
             // Single or Double character lexemes: !, !=, <, <=, >, >=
             '!' => {

@@ -23,6 +23,8 @@ pub enum TokenType {
     GREATER_EQUAL, // >=
     LESS,          // <
     LESS_EQUAL,    // <=
+    TERNARYC,      // ? Ternary operator condition
+    TERNARYE,      // : Ternary operator else
 
     // Literals
     IDENTIFIER,
@@ -111,6 +113,8 @@ impl ToString for TokenType {
             EOF => "eof",
             MULTI_LINE_COMMENT => "multi-line comment",
             COMMENT => "single-line comment",
+            TERNARYC => "?",
+            TERNARYE => ":",
         };
         str.to_string()
     }
