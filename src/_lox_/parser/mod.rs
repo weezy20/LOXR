@@ -162,12 +162,17 @@ impl Parser {
                 ParserError::InvalidToken(Some(invalid_token)) => {
                     Lox::report_err(invalid_token.line_number, invalid_token.col,
                          "Parser Error, invalid token found at what appears to be the start of a Binary Expression".into());
+                    if invalid_token.lexeme == "+" {
+                        eprintln!("Unary ‘+’ expressions are not supported.");
+                    }
                 }, unexpected => {
                     eprintln!("Internal Compiler Error: Did not expect {unexpected:#?} ");
                 }
             }
             Box::new(Expression::Lit(Literal { inner : Token::default() }))
         }, |ok| ok);
+        // TODO : *+4/62 will trigger this matches but not +*4/62, therefore to gracefully handle this error production 
+        // We must add logic to deal w/ this
         while self.matches(vec![STAR, SLASH]) {
             let operator: Token = self
             .previous

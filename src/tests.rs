@@ -214,7 +214,7 @@ mod parser_tests {
     /// Missing left operand. This should trigger a synchronization and pick up parsing from 10+11==12
     fn incomplete_expressions() {
         // let tokens = setup_lox!("1+");
-        let tokens = setup_lox!("*4/62;10+11==12");
+        let tokens = setup_lox!("*+4/62;10+11==12");
         let res = Parser::new(tokens).run();
         println!("INCOMPLETE_EXPRESSIONS RESULT : {res:#?}");
         // assert_eq!(res, Err(ParserError::UnexpectedExpression));
