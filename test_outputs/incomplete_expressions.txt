@@ -1,0 +1,92 @@
+[Running 'cargo t incomplete_expressions -- --nocapture']
+INPUT = "*4/62;10+11==12"
+
+running 1 test
+Discarding malformed binary expression:
+BinExp(
+    BinaryExpr {
+        left: Lit(
+            Literal {
+                inner: Token {
+                    type: NIL,
+                    lexeme: "",
+                    line_number: 0,
+                    col: 0,
+                },
+            },
+        ),
+        operator: Token {
+            type: STAR,
+            lexeme: "*",
+            line_number: 1,
+            col: 1,
+        },
+        right: Lit(
+            Literal {
+                inner: Token {
+                    type: NUMBER,
+                    lexeme: "4",
+                    line_number: 1,
+                    col: 2,
+                },
+            },
+        ),
+    },
+)
+INCOMPLETE_EXPRESSIONS RESULT : Ok(
+    BinExp(
+        BinaryExpr {
+            left: BinExp(
+                BinaryExpr {
+                    left: Lit(
+                        Literal {
+                            inner: Token {
+                                type: NUMBER,
+                                lexeme: "10",
+                                line_number: 1,
+                                col: 7,
+                            },
+                        },
+                    ),
+                    operator: Token {
+                        type: PLUS,
+                        lexeme: "+",
+                        line_number: 1,
+                        col: 9,
+                    },
+                    right: Lit(
+                        Literal {
+                            inner: Token {
+                                type: NUMBER,
+                                lexeme: "11",
+                                line_number: 1,
+                                col: 10,
+                            },
+                        },
+                    ),
+                },
+            ),
+            operator: Token {
+                type: EQUAL_EQUAL,
+                lexeme: "==",
+                line_number: 1,
+                col: 12,
+            },
+            right: Lit(
+                Literal {
+                    inner: Token {
+                        type: NUMBER,
+                        lexeme: "12",
+                        line_number: 1,
+                        col: 13,
+                    },
+                },
+            ),
+        },
+    ),
+)
+test tests::parser_tests::incomplete_expressions ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.00s
+
+[Finished running. Exit status: 0]
