@@ -1,5 +1,7 @@
 use thiserror::Error;
 use crate::_lox_::tokenizer::token::Token;
+
+use super::expressions::Expression;
 #[allow(unused)]
 #[derive(Error, Debug, PartialEq)]
 pub enum ParserError {
@@ -16,4 +18,6 @@ pub enum ParserError {
     MissingOperand,
     #[error("Expected Expression")]
     UnexpectedExpression,
+    #[error("Error production")]
+    ErrorProduction(Box<Expression>)
 }

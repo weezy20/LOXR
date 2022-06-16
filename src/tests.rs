@@ -215,6 +215,7 @@ mod parser_tests {
     fn incomplete_expressions() {
         // let tokens = setup_lox!("1+");
         let tokens = setup_lox!("*+4/62;10+11==12");
+        let tokens = setup_lox!("+*4/62;10+11==12");
         let res = Parser::new(tokens).run();
         println!("INCOMPLETE_EXPRESSIONS RESULT : {res:#?}");
         // assert_eq!(res, Err(ParserError::UnexpectedExpression));

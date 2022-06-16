@@ -53,6 +53,7 @@ pub enum TokenType {
 
     MULTI_LINE_COMMENT,
     COMMENT,
+    MISSING_OPERAND
 }
 
 use crate::_lox_::tokenizer::token_type::TokenType::*;
@@ -115,6 +116,7 @@ impl ToString for TokenType {
             COMMENT => "single-line comment",
             TERNARYC => "?",
             TERNARYE => ":",
+            MISSING_OPERAND => "Missing Operand",
         };
         str.to_string()
     }

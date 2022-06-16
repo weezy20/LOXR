@@ -111,7 +111,19 @@ impl Parser {
     pub fn equality(&mut self) -> Result<Box<Expression>, ParserError> {
         // This creates a left associative nested tree of binary operator nodes
         // The previous `expr` becomes the new `left` of an equality expression if matches returns true
-        let mut expr = self.comparison()?;
+        // If any other parser error, prop
+        let mut had_error = false;
+        let mut expr: Box<Expression> = self.comparison().map_or_else(|err| {
+            had_error = true;
+            // Return a error production here
+            match err {
+                ParserError::ErrorProduction(err_expr) => Ok(err_expr),
+                // When we return Err(_) here it returns from the closure and not the function body
+                // https://stackoverflow.com/questions/52027634/is-there-any-way-to-return-from-a-function-from-inside-a-closure
+                // Hence we need the Ok wraps since this closure returns a result
+                some_other_error => return Err(some_other_error),
+            }
+        }, |ok| Ok(ok))?; 
         while self.matches(vec![BANG_EQUAL, EQUAL_EQUAL]) {
             let operator: Token = self
                 .previous
@@ -119,6 +131,12 @@ impl Parser {
                 .expect("matches will ensure this field to be something");
             let right = self.comparison()?;
             expr = Box::new(Expression::BinExp(BinaryExpr::new(expr, operator, right)));
+        }
+        if had_error {
+            // print the complete binary expression and then discard it
+            println!("Discarding malformed binary expr: {expr:#?}");
+            self.synchronize();
+            self.comma_expression()?;
         }
         Ok(expr)
     }
@@ -154,39 +172,49 @@ impl Parser {
         // let mut expr = self.unary()?;
         // -- Adding an Error production for binary ops (missing left operand) -- 
         // We choose this location bcz this is the first location where a simple (i.e. non-nested) BinaryExpr may be produced
+        // 1. An error production works like this: it fills in the gap caused by a missing left operand
+        // 2. Then it proceeds with the parsing until an expression is complete
+        // 3. Then it reports error, prints and discards this malformed expression, reports an error
+        // This is done at top level binary expression production since we want to still parse the 
+        // entire Binary Expression without the left operand, in our case `equality`
+        // 4. Synchronizes the parser to next boundary and resume parsing as normal w/o entering panic mode
         let mut had_binary_expr_err = false;
-        let mut expr = self.unary().map_or_else(|e| {
+        #[allow(unused_assignments)]
+        let mut illegal_factor_token : Token = Token::default();
+        let mut expr = self.unary().map_or_else(|err| {
             had_binary_expr_err = true;
-            eprintln!("Parser error : Missing left operand of possibly a Binary expression:\nFound operator : {e} Expected operand");
-            match e {
-                ParserError::InvalidToken(Some(invalid_token)) => {
-                    Lox::report_err(invalid_token.line_number, invalid_token.col,
-                         "Parser Error, invalid token found at what appears to be the start of a Binary Expression".into());
-                    if invalid_token.lexeme == "+" {
-                        eprintln!("Unary ‘+’ expressions are not supported.");
+            eprintln!("Parser error : Missing 'left' operand of possibly a Binary expression:\nFound operator : {err} expected operand instead");
+            // Error production for missing left operand
+            Box::new(
+                Expression::Lit(
+                    Literal { inner : match err {
+                    ParserError::InvalidToken(Some(invalid_token)) => {
+                        illegal_factor_token = invalid_token.clone();
+                        illegal_factor_token.r#type = MISSING_OPERAND;
+                        Lox::report_err(invalid_token.line_number, invalid_token.col,
+                            "Invalid token found at what appears to be the start of a Binary Expression".into());
+                            if invalid_token.lexeme == "+" {
+                                eprintln!("Unary ‘+’ expressions are not supported.");
+                        }
+                        illegal_factor_token
+                    }, unexpected => {
+                        eprintln!("Internal Compiler Error: Did not expect ParserError variant {unexpected:#?} ");
+                        Token::default()
                     }
-                }, unexpected => {
-                    eprintln!("Internal Compiler Error: Did not expect {unexpected:#?} ");
                 }
-            }
-            Box::new(Expression::Lit(Literal { inner : Token::default() }))
+                }
+            ))
         }, |ok| ok);
-        // TODO : *+4/62 will trigger this matches but not +*4/62, therefore to gracefully handle this error production 
-        // We must add logic to deal w/ this
         while self.matches(vec![STAR, SLASH]) {
             let operator: Token = self
             .previous
             .take()
             .expect("matches will ensure this field to be something");
             let right = self.unary()?;
-             if !had_binary_expr_err {
-                 expr = Box::new(Expression::BinExp(BinaryExpr::new(expr, operator, right)));
-            } else {
-                expr = Box::new(Expression::BinExp(BinaryExpr::new(expr, operator, right)));
-                println!("Discarding malformed binary expression:\n{expr:#?}");
-                self.synchronize();
-                expr = self.expression()?;
-             }
+            expr = Box::new(Expression::BinExp(BinaryExpr::new(expr, operator, right)));
+        }
+        if had_binary_expr_err {
+            return Err(ParserError::ErrorProduction(expr));
         }
         Ok(expr)
     }
