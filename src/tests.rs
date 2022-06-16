@@ -219,7 +219,7 @@ mod parser_tests {
         // let tokens = setup_lox!("+*4/62;10+11==12"); // works
         // let tokens = setup_lox!("++*4/62;10+11==12"); // works
         // let tokens = setup_lox!("/+*4/62;10+11==12"); // works
-        // let tokens = setup_lox!("/*+4/62;10+11==12"); // Not working Err(UnexpectedExpression)
+        // let tokens = setup_lox!("/*+4/62;10+11==12"); // Unclosed Comment /* 
         // let res = Parser::new(tokens).run();
         // println!("INCOMPLETE_EXPRESSIONS RESULT : {res:#?}");
         let test_cases: Vec<Vec<Token>> = vec![
@@ -239,12 +239,20 @@ mod parser_tests {
     }
     #[test]
     /// Missing left operand. This should trigger a synchronization and pick up parsing from 10+11==12
-    fn incomplete_expressions_special() {
-        let tokens = setup_lox!("1+");
+    fn incomplete_expressions_special1() {
+        let tokens = setup_lox!("+-+-+-+-+-+*-/1");
         // let tokens = setup_lox!("/*+4/62;10+11==12"); // Not working Err(UnexpectedExpression)
         let res = Parser::new(tokens).run();
         println!("INCOMPLETE_EXPRESSIONS RESULT : {res:#?}");
-       
+    }
+    
+    #[test]
+    /// Missing left operand. This should trigger a synchronization and pick up parsing from 10+11==12
+    fn incomplete_expressions_special2() {
+        // let tokens = setup_lox!("//5");  // A double slash is a start of a comment
+        let tokens = setup_lox!("/*+4/62;10+11==12"); // Not working Err(UnexpectedExpression)
+        let res = Parser::new(tokens).run();
+        println!("INCOMPLETE_EXPRESSIONS RESULT : {res:#?}");
     }
     #[test]
     fn legal_expressions() {
