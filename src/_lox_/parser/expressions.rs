@@ -193,7 +193,7 @@ use crate::_lox_::tokenizer::token_type::TokenType;
 /// 3. Binary Expression with infix arithmetic operators  (+, -, *, /) or logic operators (==, !=, <, <=, >, >=)
 /// 4. Parantheses: An Expression maybe wrapped in a a pair of ( and )
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Expression {
     CommaExpr(Vec<Box<Expression>>),
     TernExp(TernaryExpr),
@@ -201,16 +201,17 @@ pub enum Expression {
     UnExp(UnaryExpr),
     Lit(Literal),
     Group(Grouping),
+    Error(Box<Expression>)
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct TernaryExpr {
     pub condition: Box<Expression>,
     pub if_true : Box<Expression>,
     pub if_false : Box<Expression>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct BinaryExpr {
     pub left: Box<Expression>,
     pub operator: Token,
@@ -231,7 +232,7 @@ impl BinaryExpr {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct UnaryExpr {
     pub operator: Token,
     pub operand: Box<Expression>,
@@ -248,7 +249,7 @@ impl UnaryExpr {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Literal {
     pub inner: Token,
 }
@@ -265,7 +266,7 @@ impl Literal {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Grouping {
     pub inner: Box<Expression>,
 }

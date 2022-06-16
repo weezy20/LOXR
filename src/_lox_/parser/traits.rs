@@ -45,6 +45,9 @@ impl ExpressionPrinter for Expression {
                 ));
                 result
             }
+            Expression::Error(e) => {
+                format!("Printing Erroneous Expression: {}", e.print())
+            },
         }
     }
 }

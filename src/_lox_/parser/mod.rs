@@ -65,6 +65,8 @@ pub struct Parser {
     tokens: BPeekable<IntoIter<Token>>,
     current: usize,
     previous: Option<Token>,
+    error_production : Vec<Token>,
+    parser_corrupt: bool,
 }
 /// In a recursive descent parser, the least priority rule is matched first
 /// as we descend down into nested grammer rules
@@ -111,19 +113,20 @@ impl Parser {
     pub fn equality(&mut self) -> Result<Box<Expression>, ParserError> {
         // This creates a left associative nested tree of binary operator nodes
         // The previous `expr` becomes the new `left` of an equality expression if matches returns true
-        // If any other parser error, prop
-        let mut had_error = false;
-        let mut expr: Box<Expression> = self.comparison().map_or_else(|err| {
-            had_error = true;
-            // Return a error production here
-            match err {
-                ParserError::ErrorProduction(err_expr) => Ok(err_expr),
-                // When we return Err(_) here it returns from the closure and not the function body
-                // https://stackoverflow.com/questions/52027634/is-there-any-way-to-return-from-a-function-from-inside-a-closure
-                // Hence we need the Ok wraps since this closure returns a result
-                some_other_error => return Err(some_other_error),
-            }
-        }, |ok| Ok(ok))?; 
+        
+        let mut expr: Box<Expression> = self.comparison()?; 
+        let mut _had_error = false;
+        if self.error_production.len() > 0 {
+            println!("Error productions in Parser cache : {:?}", self.error_production);
+            _had_error = true;
+            println!("Discarding Malformed expression:\n{expr:#?}");
+            let _ = Expression::Error(expr); // 
+            self.synchronize();
+            // Time to clear error cache
+            self.error_production.clear();
+            return self.comma_expression();
+        }
+
         while self.matches(vec![BANG_EQUAL, EQUAL_EQUAL]) {
             let operator: Token = self
                 .previous
@@ -131,12 +134,6 @@ impl Parser {
                 .expect("matches will ensure this field to be something");
             let right = self.comparison()?;
             expr = Box::new(Expression::BinExp(BinaryExpr::new(expr, operator, right)));
-        }
-        if had_error {
-            // print the complete binary expression and then discard it
-            println!("Discarding malformed binary expr: {expr:#?}");
-            self.synchronize();
-            self.comma_expression()?;
         }
         Ok(expr)
     }
@@ -179,32 +176,27 @@ impl Parser {
         // entire Binary Expression without the left operand, in our case `equality`
         // 4. Synchronizes the parser to next boundary and resume parsing as normal w/o entering panic mode
         let mut had_binary_expr_err = false;
-        #[allow(unused_assignments)]
-        let mut illegal_factor_token : Token = Token::default();
-        let mut expr = self.unary().map_or_else(|err| {
-            had_binary_expr_err = true;
-            eprintln!("Parser error : Missing 'left' operand of possibly a Binary expression:\nFound operator : {err} expected operand instead");
-            // Error production for missing left operand
-            Box::new(
-                Expression::Lit(
-                    Literal { inner : match err {
-                    ParserError::InvalidToken(Some(invalid_token)) => {
-                        illegal_factor_token = invalid_token.clone();
-                        illegal_factor_token.r#type = MISSING_OPERAND;
-                        Lox::report_err(invalid_token.line_number, invalid_token.col,
-                            "Invalid token found at what appears to be the start of a Binary Expression".into());
-                            if invalid_token.lexeme == "+" {
-                                eprintln!("Unary ‘+’ expressions are not supported.");
-                        }
-                        illegal_factor_token
-                    }, unexpected => {
-                        eprintln!("Internal Compiler Error: Did not expect ParserError variant {unexpected:#?} ");
-                        Token::default()
+        // #[allow(unused_assignments)]
+        // let mut illegal_factor_token : Token = Token::default();
+        let mut expr = match self.unary() {
+            Ok(expr) => expr,
+            Err(ParserError::InvalidToken(i)) => {
+                let (mut counter, threshold) = (1, 10);
+                had_binary_expr_err = true;
+                report_token_error(&i);
+                loop {
+                    let maybe_valid = self.primary();
+                    if let Err(ParserError::InvalidToken(ref i2)) = maybe_valid  
+                    {
+                        report_token_error(i2)
                     }
+                    if maybe_valid.is_ok() { break maybe_valid?; }
+                    counter += 1;    
+                    if counter == threshold {return maybe_valid;}
                 }
-                }
-            ))
-        }, |ok| ok);
+            },
+            Err(e) => return Err(e),
+        };
         while self.matches(vec![STAR, SLASH]) {
             let operator: Token = self
             .previous
@@ -214,7 +206,8 @@ impl Parser {
             expr = Box::new(Expression::BinExp(BinaryExpr::new(expr, operator, right)));
         }
         if had_binary_expr_err {
-            return Err(ParserError::ErrorProduction(expr));
+            println!("Recovering..............");
+            // return Err(ParserError::ErrorProduction(expr));
         }
         Ok(expr)
     }
@@ -265,12 +258,16 @@ impl Parser {
             // .expect("Expect ')' after expression");
             Ok(Box::new(Expression::Group(Grouping::new(expr))))
         } else {
+            // If there's going to be an illegal parse, it's going to be here
+            self.parser_corrupt = true;
             // "Each token must be matched by now, if not, the parser may have not understand where the Token
             // fits into the grammar production after falling from expression upto token, in which case we have to write code
             // to handle that, or the Token is simply in the wrong place and a parser error should be reported "
             // panic!("Cannot parse as primary expression");
-            if !self.is_at_end() {
-                Err(ParserError::InvalidToken(self.tokens.peek().cloned()))
+            if !self.is_at_end() && self.matches(vec![PLUS, MINUS, SLASH, STAR, EQUAL_EQUAL, BANG_EQUAL, EQUAL, LESS, GREATER, LESS_EQUAL, GREATER_EQUAL]){
+                // Capture multiple invalid tokens or operators appearing at start of expression
+                self.error_production.push(self.previous.clone().expect("Matches will always be something"));
+                Err(ParserError::InvalidToken(self.previous.clone()))
             }
             // The next token is EOF and therefore we've run out of tokens to parse
             else {
@@ -281,8 +278,17 @@ impl Parser {
         }
     }
 }
+
+fn report_token_error(i: &Option<Token>) {
+    if let Some(invalid_token) = i {
+        let message = format!("Invalid token: '{}' ,found at what appears to be the start of a Binary Expression", invalid_token.lexeme);
+        Lox::report_err(invalid_token.line_number, invalid_token.col, message);
+    }
+}
 impl Parser {
     /// Peeks the current token iterator for a match in the list of searchable token types passed to it.
+    /// Advances the underlying iterator only on a match, i.e. increments the `current` field and consumes 
+    /// the peeked token
     /// For instance in the comparison rule, we may want to check a multitude of tokentypes('<','<=',...) for a comparision,
     /// so we can pass all comparison operators in the searchable list and if we get a yes back from this function,
     /// it means that we must call the comparision rule again, otherwise we are done with comparison expressions and must
@@ -377,6 +383,8 @@ impl Parser {
             tokens: tokens.into_iter().better_peekable(),
             current: 0_usize,
             previous: None,
+            error_production: vec![],
+            parser_corrupt: false,
         }
     }
     /// Starts the parser
