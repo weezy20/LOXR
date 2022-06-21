@@ -156,19 +156,14 @@ mod parser_tests {
     }
 
     #[test]
-    fn unclosed_paren() {
+    fn unclosed_paren_at_end() {
         use crate::_lox_::tokenizer::{token::Token, token_type::TokenType::*};
         let tokens = setup_lox!("1+3+4-(3+4");
         let res = Parser::new(tokens).run();
         // assert_eq!(res, Err(ParserError::UnbalancedParen));
         assert_eq!(
-            res,
-            Err(ParserError::InvalidToken(Some(Token {
-                r#type: EOF,
-                lexeme: "".to_string(),
-                line_number: 1,
-                col: 10
-            })))
+            res, // UnexpectedExpression
+            Err(ParserError::UnexpectedExpression)
         );
     }
     // #[ignore = "Lox cannot handle beyond simple arithmetic expressions at this point"]

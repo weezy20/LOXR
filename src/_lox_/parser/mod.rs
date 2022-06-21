@@ -332,8 +332,8 @@ impl Parser {
         if let Some(peeked_token) = self.tokens.peek() && expected_token == peeked_token.r#type {
             return Ok(self.advance());
         }
-        else if let Some(peeked_token) = self.tokens.peek() { 
-            Lox::report_err(peeked_token.line_number, peeked_token.col, format!("Invalid Token {peeked_token:#?} encountered\nExpected {expected_token:#?}") );
+        else if let Some(peeked_token) = self.tokens.peek() && peeked_token.r#type != EOF { 
+            Lox::report_err(peeked_token.line_number, peeked_token.col, format!("Invalid Token> {peeked_token:#?} encountered\nExpected {expected_token:#?}") );
             Err(ParserError::InvalidToken(self.tokens.peek().cloned()))
         } 
         // None is peeked that means we are at EOF
@@ -341,12 +341,14 @@ impl Parser {
             // self.previous is guaranteed to exist at this point because we haven't formed an expression yet
             // and we are only peeking ahead to check if the right token follows. If this contract is violated it's a bug
             // and should be reported as a interpreter/compiler internal error
-            assert!(self.previous.is_some(), "Internal Lox Error, expected parser.previous to be Some(_) found None");
-            let peeked_token = self.previous.clone().unwrap();
+            // assert!(self.previous.is_some(), "Internal Lox Error, expected parser.previous to be Some(_) found None");
+            // self.previous may or may not exist as we have started replacing `clone` calls with `take` calls in various rules
+            // Which means we cannot rely on the following code for peeked_token anymore
+            // let peeked_token = self.previous.clone().unwrap();
             // We should enter this condition
-            if self.is_at_end() {
+            if let Some(peeked_token) = self.tokens.peek() && peeked_token.r#type == EOF {
                 // This should report EOF in the error msg
-                Lox::report_err(peeked_token.line_number, peeked_token.col, format!("Unexpected end of file, found {:#?}", peeked_token.r#type));
+                Lox::report_err(peeked_token.line_number, peeked_token.col, format!("Unexpected end of file, found {:#?}, expected `{expected_token:?}`", peeked_token.r#type));
             }
             Err(ParserError::UnexpectedExpression)
         }
