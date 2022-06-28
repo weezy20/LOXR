@@ -3,13 +3,6 @@ use super::super::expressions::*;
 use crate::tokenizer::{token::Token, token_type::TokenType};
 use std::fmt::Debug;
 
-/// Helper struct to store info for Expressions expansion
-#[derive(Default)]
-pub struct Metadata {
-    /// Optional list of boxed Expressions
-    expressions: Option<Vec<Box<Expression>>>,
-}
-
 macro_rules! start {
     ($id: tt) => {{
         let mut s = format!(" {} ( ", $id);
@@ -47,7 +40,7 @@ impl ExpressionPrinter for Expression {
             }
             Expression::Error(e) => {
                 format!("Printing Erroneous Expression: {}", e.print())
-            },
+            }
         }
     }
 }
