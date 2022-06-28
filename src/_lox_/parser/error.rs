@@ -1,5 +1,5 @@
 use thiserror::Error;
-use crate::_lox_::tokenizer::token::Token;
+use crate::tokenizer::token::Token;
 
 use super::expressions::Expression;
 #[allow(unused)]

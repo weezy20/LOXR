@@ -1,4 +1,4 @@
-use crate::_lox_::lox::Lox;
+use _lox_::Lox;
 use std::fs::File;
 use std::io::Read;
 /// Start a REPL for Lox if no CLI args are passed

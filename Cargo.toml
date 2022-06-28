@@ -1,9 +1,17 @@
 [package]
+edition = "2021"
 name = "loxr"
 version = "0.1.1"
-edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "_lox_"
+path = "src/_lox_/lib.rs"
+
+[[bin]]
+name = "loxr"
+path = "src/main.rs"
 
 [dependencies]
 better_peekable = "0.2.4"

@@ -1,6 +1,6 @@
 //! The purpose of this file is to define a scanner that takes a string and tokenizes it
 
-use crate::_lox_::lox::Lox;
+use crate::Lox;
 use better_peekable::{BPeekable, BetterPeekable};
 use lazy_static::lazy_static;
 use std::collections::HashMap;

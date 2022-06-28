@@ -182,8 +182,8 @@
 //! It's good enough to warrant it's own development branch
 //!
 
-use crate::_lox_::tokenizer::token::Token;
-use crate::_lox_::tokenizer::token_type::TokenType;
+use crate::tokenizer::token::Token;
+use crate::tokenizer::token_type::TokenType;
 
 /// # The overarching Expression type
 ///

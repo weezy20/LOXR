@@ -1,14 +1,14 @@
 
-use crate::_lox_::parser::expressions::*;
-use crate::_lox_::tokenizer::token::Token;
-use crate::_lox_::tokenizer::token_type::TokenType::{self, *};
+use crate::parser::expressions::*;
+use crate::tokenizer::token::Token;
+use crate::tokenizer::token_type::TokenType::{self, *};
 use better_peekable::{BPeekable, BetterPeekable};
 use expressions::Expression;
 use std::vec::IntoIter;
 
 use self::error::ParserError;
 
-use super::lox::Lox;
+use crate::Lox;
 /// ParserError
 pub mod error;
 

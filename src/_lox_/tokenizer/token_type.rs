@@ -56,7 +56,7 @@ pub enum TokenType {
     MISSING_OPERAND
 }
 
-use crate::_lox_::tokenizer::token_type::TokenType::*;
+use crate::tokenizer::token_type::TokenType::*;
 impl TokenType {
     /// Check if the literal is a primary as in contains a name, number, string, boolean, or nil 
     /// This may be subject to change as the parser progresses or maybe removed entirely
