@@ -14,7 +14,8 @@ pub mod error;
 
 /// Definition for Expression enum, and types that are Expression
 pub mod traits;
-
+/// Definition for a Lox value
+pub mod value;
 /// Expression types
 pub mod expressions;
 

@@ -1,7 +1,7 @@
-use thiserror::Error;
+use crate::parser::expressions::Expression;
 use crate::tokenizer::token::Token;
+use thiserror::Error;
 
-use super::expressions::Expression;
 #[allow(unused)]
 #[derive(Error, Debug, PartialEq)]
 pub enum ParserError {
@@ -19,5 +19,18 @@ pub enum ParserError {
     #[error("Expected Expression")]
     UnexpectedExpression,
     #[error("Error production")]
-    ErrorProduction(Box<Expression>)
+    ErrorProduction(Box<Expression>),
+}
+
+#[derive(Error, Debug, PartialEq)]
+pub enum EvalError {
+    #[error("Expression Evaluation error: {}", match self {
+        EvalError::InvalidExpr(exp, custom_msg) if custom_msg.is_some() => { 
+            let msg = custom_msg.as_ref().unwrap();
+            format!("{}\nExpression: {exp:?}", msg)
+        },
+        EvalError::InvalidExpr(exp, _) => { format!("Cannot evaluate: {:?}", exp) }
+        _ => { "ICE : Uncaught exception".to_string() }
+    }) ]
+    InvalidExpr(Expression, Option<String>),
 }

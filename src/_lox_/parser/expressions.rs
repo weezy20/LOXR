@@ -191,7 +191,7 @@ use crate::tokenizer::token_type::TokenType;
 /// 1. Literal
 /// 2. Unary Expression with prefixes like ! or -
 /// 3. Binary Expression with infix arithmetic operators  (+, -, *, /) or logic operators (==, !=, <, <=, >, >=)
-/// 4. Parantheses: An Expression maybe wrapped in a a pair of ( and )
+/// 4. Grouping: An Expression maybe wrapped in a a pair of ( and )
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Expression {

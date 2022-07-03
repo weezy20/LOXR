@@ -1,36 +1,21 @@
+use crate::parser::error::EvalError;
 use crate::parser::expressions::*;
-pub enum Value {
-    Double(f64),
-    Bool(bool),
-    String(String),
-    Nil,
-}
-impl From<bool> for Value {
-    fn from(b: bool) -> Self {
-        Self::Bool(b)
-    }
-}
-impl From<String> for Value {
-    fn from(x: String) -> Self {
-        Self::String(x)
-    }
-}
-impl From<f64> for Value {
-    fn from(f: f64) -> Self {
-        Self::Double(f)
-    }
-}
+use crate::parser::value::Value;
+use crate::tokenizer::token_type::TokenType::*;
+
+type ValueResult = Result<Value, EvalError>;
+
 pub trait Evaluate {
-    fn eval(&self) -> Option<Value>;
+    fn eval(&self) -> ValueResult;
 }
 
 impl Evaluate for Expression {
-    fn eval(&self) -> Option<Value> {
+    fn eval(&self) -> ValueResult {
         match self {
             Expression::CommaExpr(expr_list) => todo!(),
             Expression::TernExp(ternary) => todo!(),
-            Expression::BinExp(bin_exp) => todo!(),
-            Expression::UnExp(un_exp) => todo!(),
+            Expression::BinExp(bin_exp) => bin_exp.eval(),
+            Expression::UnExp(un_exp) => un_exp.eval(),
             Expression::Lit(literal) => literal.eval(),
             Expression::Group(group) => group.eval(),
             Expression::Error(err) => todo!(),
@@ -38,33 +23,138 @@ impl Evaluate for Expression {
     }
 }
 
+impl Evaluate for BinaryExpr {
+    fn eval(&self) -> ValueResult {
+        let err_exp = Expression::BinExp(self.clone());
+        let left = self.left.eval()?;
+        let right = self.right.eval()?;
+        match self.operator.r#type {
+            MINUS => {
+                if let Some((lval, rval)) = left.is_numeric().and_then(|lval| {
+                    if let Some(rval) = right.is_numeric() {
+                        return Some((lval, rval));
+                    }
+                    None
+                }) {
+                    Ok(Value::Double(lval - rval))
+                } else {
+                    Err(EvalError::InvalidExpr(
+                        err_exp,
+                        Some("Cannot subtract this binexp".to_string()),
+                    ))
+                }
+            }
+            SLASH => {
+                if let Some((lval, rval)) = left.is_numeric().and_then(|lval| {
+                    if let Some(rval) = right.is_numeric() {
+                        return Some((lval, rval));
+                    }
+                    None
+                }) {
+                    if rval == 0.0 {
+                        Err(EvalError::InvalidExpr(
+                            err_exp,
+                            Some("Cannot divide by zero".to_string()),
+                        ))
+                    } else {
+                        Ok(Value::Double(lval / rval))
+                    }
+                } else {
+                    Err(EvalError::InvalidExpr(
+                        err_exp,
+                        Some("Cannot divide this binexp".to_string()),
+                    ))
+                }
+            }
+            STAR => {
+                if let Some((lval, rval)) = left.is_numeric().and_then(|lval| {
+                    if let Some(rval) = right.is_numeric() {
+                        return Some((lval, rval));
+                    }
+                    None
+                }) {
+                    Ok(Value::Double(lval * rval))
+                } else {
+                    Err(EvalError::InvalidExpr(
+                        err_exp,
+                        Some("Cannot multiply this binexp".to_string()),
+                    ))
+                }
+            }
+            PLUS => {
+                if let Some((lval, rval)) = left.is_numeric().and_then(|lval| {
+                    if let Some(rval) = right.is_numeric() {
+                        return Some((lval, rval));
+                    }
+                    None
+                }) {
+                    return Ok(Value::Double(lval + rval));
+                }
+                // Another approach for mutliple Options
+                match (left.is_string(), right.is_string()) {
+                    (Some(lstr), Some(rstr)) => {
+                        // into_owned moves data out of the Cow
+                        // This should be fine as once we eval a binexp, we won't need the value
+                        let mut l = lstr.into_owned();
+                        l.push_str(&rstr);
+                        return Ok(Value::String(l.to_owned()));
+                    }
+                    _ => {
+                        return Err(EvalError::InvalidExpr(
+                            err_exp,
+                            Some("Cannot add this binexp".to_string()),
+                        ))
+                    }
+                }
+            }
+            _ => Err(EvalError::InvalidExpr(err_exp, None)),
+        }
+    }
+}
+
 impl Evaluate for UnaryExpr {
-    fn eval(&self) -> Option<Value> {
-        todo!()
+    fn eval(&self) -> ValueResult {
+        let right = self.operand.eval()?;
+        let mut result = match self.operator.r#type {
+            BANG => Value::Bool(!right.is_truthy()),
+            MINUS => match right {
+                Value::Double(rval) => Value::Double(-rval),
+                _ => {
+                    return Err(EvalError::InvalidExpr(
+                        Expression::UnExp(self.clone()),
+                        None,
+                    ))
+                }
+            },
+            _ => {
+                return Err(EvalError::InvalidExpr(
+                    Expression::UnExp(self.clone()),
+                    Some("Cannot evaluate as unary expression".to_string()),
+                ))
+            }
+        };
+        Ok(result)
     }
 }
 
 impl Evaluate for Literal {
-    fn eval(&self) -> Option<Value> {
+    fn eval(&self) -> ValueResult {
         match self.inner.r#type {
-            crate::tokenizer::token_type::TokenType::STRING => {
-                Some(self.inner.lexeme.clone().into())
-            }
-            crate::tokenizer::token_type::TokenType::NUMBER => {
+            STRING => Ok(self.inner.lexeme.clone().into()),
+            NUMBER => {
                 let n = (&self.inner.lexeme).parse::<f64>().expect("Internal compiler error: Parsing a Number token as Number is infallible");
-                Some(n.into())
+                Ok(n.into())
             }
-            crate::tokenizer::token_type::TokenType::TRUE => Some(Value::Bool(true)),
-            crate::tokenizer::token_type::TokenType::FALSE => Some(Value::Bool(false)),
-            crate::tokenizer::token_type::TokenType::NIL => Some(Value::Nil),
-            _ => None,
+            TRUE => Ok(Value::Bool(true)),
+            FALSE => Ok(Value::Bool(false)),
+            NIL => Ok(Value::Nil),
+            _ => Err(EvalError::InvalidExpr(Expression::Lit(self.clone()), None)),
         }
     }
 }
 
 impl Evaluate for Grouping {
-    fn eval(&self) -> Option<Value> {
-        // self.inner.eval()
-        None
+    fn eval(&self) -> ValueResult {
+        self.inner.eval()
     }
 }

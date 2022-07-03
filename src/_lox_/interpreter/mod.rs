@@ -1,5 +1,5 @@
 // use crate::parser::expressions::Expression;
-// use crate::parser::traits::evaluate::Value;
+// use crate::parser::value::Value;
 
 // pub struct Interpreter {
 //     pub expr: Box<Expression>,
