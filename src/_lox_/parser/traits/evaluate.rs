@@ -26,9 +26,12 @@ impl Evaluate for Expression {
                 if let Some(last) = expr_list.last() {
                     last.eval()
                 } else {
-                    Err(EvalError::InvalidExpr(self.clone(), Some("Cannot evaluate comma expression".into())))
+                    Err(EvalError::InvalidExpr(
+                        self.clone(),
+                        Some("Cannot evaluate comma expression".into()),
+                    ))
                 }
-            },
+            }
             Expression::TernExp(ternary) => ternary.eval(),
             Expression::BinExp(bin_exp) => bin_exp.eval(),
             Expression::UnExp(un_exp) => un_exp.eval(),
