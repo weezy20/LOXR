@@ -17,14 +17,14 @@ pub enum Expression {
     UnExp(UnaryExpr),
     Lit(Literal),
     Group(Grouping),
-    Error(Box<Expression>)
+    Error(Box<Expression>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct TernaryExpr {
     pub condition: Box<Expression>,
-    pub if_true : Box<Expression>,
-    pub if_false : Box<Expression>,
+    pub if_true: Box<Expression>,
+    pub if_false: Box<Expression>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -35,11 +35,7 @@ pub struct BinaryExpr {
 }
 
 impl BinaryExpr {
-    pub fn new(
-        left: Box<Expression>,
-        operator: Token,
-        right: Box<Expression>,
-    ) -> Self {
+    pub fn new(left: Box<Expression>, operator: Token, right: Box<Expression>) -> Self {
         Self {
             left,
             operator,
@@ -95,9 +91,9 @@ impl Grouping {
 
 #[cfg(test)]
 mod test {
-    use crate::_lox_::parser::traits::ExpressionPrinter;
-    use crate::_lox_::tokenizer::token::Token;
-    use crate::_lox_::tokenizer::token_type::TokenType;
+    use crate::parser::traits::printer::ExpressionPrinter;
+    use crate::tokenizer::token::Token;
+    use crate::tokenizer::token_type::TokenType;
 
     use super::*;
 
@@ -106,51 +102,22 @@ mod test {
         let _expression = " 1 + (2 - (4 / 5))";
         let (line_number, col) = (1, 1);
         let one = Expression::Lit(
-            Literal::new(Token::new(
-                TokenType::NUMBER,
-                "1".into(),
-                line_number,
-                col,
-            ))
-            .unwrap(),
+            Literal::new(Token::new(TokenType::NUMBER, "1".into(), line_number, col)).unwrap(),
         );
         let two = Expression::Lit(
-            Literal::new(Token::new(
-                TokenType::NUMBER,
-                "2".into(),
-                line_number,
-                col,
-            ))
-            .unwrap(),
+            Literal::new(Token::new(TokenType::NUMBER, "2".into(), line_number, col)).unwrap(),
         );
         let four = Expression::Lit(
-            Literal::new(Token::new(
-                TokenType::NUMBER,
-                "4".into(),
-                line_number,
-                col,
-            ))
-            .unwrap(),
+            Literal::new(Token::new(TokenType::NUMBER, "4".into(), line_number, col)).unwrap(),
         );
         let five = Expression::Lit(
-            Literal::new(Token::new(
-                TokenType::NUMBER,
-                "5".into(),
-                line_number,
-                col,
-            ))
-            .unwrap(),
+            Literal::new(Token::new(TokenType::NUMBER, "5".into(), line_number, col)).unwrap(),
         );
         let group45 = Expression::Group(Grouping {
             inner: Box::new(Expression::BinExp(BinaryExpr {
                 left: Box::new(four),
                 right: Box::new(five),
-                operator: Token::new(
-                    TokenType::SLASH,
-                    "/".into(),
-                    line_number,
-                    col,
-                ),
+                operator: Token::new(TokenType::SLASH, "/".into(), line_number, col),
             })),
         });
 
@@ -158,12 +125,7 @@ mod test {
             inner: Box::new(Expression::BinExp(BinaryExpr {
                 left: Box::new(two),
                 right: Box::new(group45),
-                operator: Token::new(
-                    TokenType::MINUS,
-                    "-".into(),
-                    line_number,
-                    col,
-                ),
+                operator: Token::new(TokenType::MINUS, "-".into(), line_number, col),
             })),
         });
 

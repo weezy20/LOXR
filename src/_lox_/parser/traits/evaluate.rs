@@ -12,14 +12,41 @@ pub trait Evaluate {
 impl Evaluate for Expression {
     fn eval(&self) -> ValueResult {
         match self {
-            Expression::CommaExpr(expr_list) => todo!(),
-            Expression::TernExp(ternary) => todo!(),
+            Expression::CommaExpr(expr_list) => {
+                // Comma expressions evaluate the list, discarding all results uptil the last one
+                expr_list.iter().enumerate().for_each(|(idx, item)| {
+                    if idx != expr_list.len() - 1 {
+                        // eval and discard
+                        match item.eval() {
+                            Ok(x) => println!("Evaluating {item:?} got -> {x:?}"),
+                            Err(e) => println!("Evaluating {item:?} got error -> {e:?}"),
+                        }
+                    }
+                });
+                if let Some(last) = expr_list.last() {
+                    last.eval()
+                } else {
+                    Err(EvalError::InvalidExpr(self.clone(), Some("Cannot evaluate comma expression".into())))
+                }
+            },
+            Expression::TernExp(ternary) => ternary.eval(),
             Expression::BinExp(bin_exp) => bin_exp.eval(),
             Expression::UnExp(un_exp) => un_exp.eval(),
             Expression::Lit(literal) => literal.eval(),
             Expression::Group(group) => group.eval(),
-            Expression::Error(err) => todo!(),
+            // For now let's throw an error on error production evaluations
+            Expression::Error(err) => Err(EvalError::ErrorProduction),
         }
+    }
+}
+
+impl Evaluate for TernaryExpr {
+    fn eval(&self) -> ValueResult {
+        // TernaryExpr { condition : Box<expr> , if_true : Box<expr>, if_false : Box<expr> }
+        let condition = self.condition.eval()?;
+        let condition = condition.is_truthy();
+        let result = [&self.if_false, &self.if_true][condition as usize];
+        result.eval()
     }
 }
 
@@ -142,7 +169,9 @@ impl Evaluate for Literal {
         match self.inner.r#type {
             STRING => Ok(self.inner.lexeme.clone().into()),
             NUMBER => {
-                let n = (&self.inner.lexeme).parse::<f64>().expect("Internal compiler error: Parsing a Number token as Number is infallible");
+                let n = (&self.inner.lexeme).parse::<f64>().expect(
+                    "Internal compiler error: Parsing a Number token as Number is infallible",
+                );
                 Ok(n.into())
             }
             TRUE => Ok(Value::Bool(true)),

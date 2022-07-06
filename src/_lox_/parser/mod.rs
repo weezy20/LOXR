@@ -118,7 +118,7 @@ impl Parser {
         let mut expr: Box<Expression> = self.comparison()?; 
         let mut _had_error = false;
         if self.error_production.len() > 0 {
-            println!("Error productions in Parser cache : {:?}", self.error_production);
+            eprintln!("Error productions in Parser cache : {:?}", self.error_production);
             _had_error = true;
             println!("Discarding Malformed expression:\n{expr:#?}");
             let _ = Expression::Error(expr); // 
@@ -235,19 +235,19 @@ impl Parser {
             // Previous is sure to exist if this branch is entered
             // Also constructing a literal is infallible at this stage
             let _p = self.previous.clone().expect("Previous should have something here");
-            if let Some(peeked_token) = self.peek() {
-                match peeked_token.r#type {
-                    // LEFT_PAREN | LEFT_BRACE | LEFT_SQUARE | RIGHT_BRACE | RIGHT_PAREN | RIGHT_SQUARE => {
-                    //     Lox::report_err(
-                    //         peeked_token.line_number, 
-                    //         peeked_token.col, 
-                    //         format!("Unexpected token {peeked_token:#?} after {p:#?}")
-                    //     );
-                    //     return Err(ParserError::InvalidToken(Some(peeked_token).cloned()));
-                    // }
-                    _ => {}
-                }
-            }
+            // if let Some(peeked_token) = self.peek() {
+            //     match peeked_token.r#type {
+            //         // LEFT_PAREN | LEFT_BRACE | LEFT_SQUARE | RIGHT_BRACE | RIGHT_PAREN | RIGHT_SQUARE => {
+            //         //     Lox::report_err(
+            //         //         peeked_token.line_number, 
+            //         //         peeked_token.col, 
+            //         //         format!("Unexpected token {peeked_token:#?} after {p:#?}")
+            //         //     );
+            //         //     return Err(ParserError::InvalidToken(Some(peeked_token).cloned()));
+            //         // }
+            //         _ => {}
+            //     }
+            // }
             Ok(Box::new(Expression::Lit(
                 Literal::new(self.previous.take().unwrap()).unwrap(),
             )))
@@ -268,6 +268,8 @@ impl Parser {
             if !self.is_at_end() && self.matches(vec![PLUS, MINUS, SLASH, STAR, EQUAL_EQUAL, BANG_EQUAL, EQUAL, LESS, GREATER, LESS_EQUAL, GREATER_EQUAL]){
                 // Capture multiple invalid tokens or operators appearing at start of expression
                 self.error_production.push(self.previous.clone().expect("Matches will always be something"));
+                // Don't worry, this error is caught in binary expression parser and it will recognize the error production
+                // This err won't be propagated upto the top expression parser logic
                 Err(ParserError::InvalidToken(self.previous.clone()))
             }
             // The next token is EOF and therefore we've run out of tokens to parse

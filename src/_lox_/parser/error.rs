@@ -33,4 +33,6 @@ pub enum EvalError {
         _ => { "ICE : Uncaught exception".to_string() }
     }) ]
     InvalidExpr(Expression, Option<String>),
+    #[error("Cannot evaluate Error production")]
+    ErrorProduction
 }
