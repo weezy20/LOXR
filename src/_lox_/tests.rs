@@ -290,7 +290,7 @@ mod parser_evaluator {
         // Ternary expression
         let tokens = setup_lox!("4 == 5? 1 < 2 ? 1 : 2 : 3");
         let res = Parser::new(tokens).run().unwrap().eval();
-        // assert!(res.is_ok());
+        assert!(res.is_ok());
         println!("{:#?}", res);
     }
 }

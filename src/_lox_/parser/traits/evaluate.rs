@@ -167,6 +167,13 @@ impl Evaluate for BinaryExpr {
                     Some("Cannot compare {left:?} {right:?}".into()),
                 )),
             },
+            EQUAL_EQUAL => match left.partial_cmp(&right) {
+                Some(o) => Ok(Value::from(o == Ordering::Equal)),
+                None => Err(EvalError::InvalidExpr(
+                    err_exp,
+                    Some("Cannot compare {left:?} {right:?}".into()),
+                )),
+            },
             _ => Err(EvalError::InvalidExpr(err_exp, None)),
         }
     }
