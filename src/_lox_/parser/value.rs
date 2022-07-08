@@ -33,6 +33,15 @@ impl Value {
         }
     }
 }
+impl std::cmp::PartialOrd for Value {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match (self.is_numeric(), other.is_numeric()) {
+            (Some(l), Some(r)) => l.partial_cmp(&r),
+            _ => None,
+        }
+    }
+}
+
 impl From<bool> for Value {
     fn from(b: bool) -> Self {
         Self::Bool(b)

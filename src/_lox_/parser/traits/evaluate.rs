@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use crate::parser::error::EvalError;
 use crate::parser::expressions::*;
 use crate::parser::value::Value;
@@ -137,6 +139,34 @@ impl Evaluate for BinaryExpr {
                     }
                 }
             }
+            GREATER => match left.partial_cmp(&right) {
+                Some(o) => Ok(Value::from(o == Ordering::Greater)),
+                None => Err(EvalError::InvalidExpr(
+                    err_exp,
+                    Some("Cannot compare {left:?} {right:?}".into()),
+                )),
+            },
+            GREATER_EQUAL => match left.partial_cmp(&right) {
+                Some(o) => Ok(Value::from(o == Ordering::Greater || o == Ordering::Equal)),
+                None => Err(EvalError::InvalidExpr(
+                    err_exp,
+                    Some("Cannot compare {left:?} {right:?}".into()),
+                )),
+            },
+            LESS => match left.partial_cmp(&right) {
+                Some(o) => Ok(Value::from(o == Ordering::Less)),
+                None => Err(EvalError::InvalidExpr(
+                    err_exp,
+                    Some("Cannot compare {left:?} {right:?}".into()),
+                )),
+            },
+            LESS_EQUAL => match left.partial_cmp(&right) {
+                Some(o) => Ok(Value::from(o == Ordering::Less || o == Ordering::Equal)),
+                None => Err(EvalError::InvalidExpr(
+                    err_exp,
+                    Some("Cannot compare {left:?} {right:?}".into()),
+                )),
+            },
             _ => Err(EvalError::InvalidExpr(err_exp, None)),
         }
     }
