@@ -41,7 +41,16 @@ impl std::cmp::PartialOrd for Value {
         }
     }
 }
-
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Double(x) => write!(f, "{x}"),
+            Value::Bool(x) => write!(f, "{x}"),
+            Value::String(x) => write!(f, "\"{x}\""),
+            Value::Nil => write!(f, "Nil"),
+        }
+    }
+}
 impl From<bool> for Value {
     fn from(b: bool) -> Self {
         Self::Bool(b)

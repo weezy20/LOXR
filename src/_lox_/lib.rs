@@ -14,6 +14,7 @@ pub mod interpreter;
 
 use crate::parser::Parser;
 
+use crate::parser::traits::evaluate::Evaluate;
 use crate::tokenizer::scanner::Scanner;
 #[derive(Debug)]
 pub struct Lox {
@@ -40,13 +41,16 @@ impl Lox {
         let mut scanner = Scanner::new(&src, self);
         scanner.scan_tokens();
         let tokens = scanner.tokens;
-        tokens
-            .iter()
-            .map(|t| t.to_string())
-            .for_each(|tr| println!("{tr}"));
+        // tokens
+        //     .iter()
+        //     .map(|t| t.to_string())
+        //     .for_each(|tr| println!("{tr}"));
         let mut parser = Parser::new(tokens);
         match parser.run() {
-            Ok(std) => println!("Successfully parsed: {std:#?}"),
+            Ok(exp) => match exp.eval() {
+                Ok(result) => println!("{result}"),
+                Err(e) => eprintln!("{e:?}"),
+            }/* println!("Successfully parsed: {std:#?}"), */
             Err(_) => {
                 self.had_error = true;
             }
