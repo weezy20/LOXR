@@ -1,10 +1,9 @@
 #![allow(unused, warnings)]
 #![cfg(test)]
-use _lox_::parser::Parser;
-use _lox_::tokenizer::scanner::*;
-use _lox_::Lox;
+use crate::parser::Parser;
+use crate::tokenizer::scanner::*;
+use crate::Lox;
 
-#[cfg(test)]
 mod tokenizer_tests {
     use super::*;
     #[test]
@@ -107,12 +106,11 @@ adsadasdasdasd
     }
 }
 
-#[cfg(test)]
 mod parser_tests {
     use super::*;
-    use crate::_lox_::parser::error::ParserError;
-    use crate::_lox_::parser::traits::ExpressionPrinter;
-    use crate::_lox_::tokenizer::token::Token;
+    use crate::parser::error::ParserError;
+    use crate::parser::traits::printer::ExpressionPrinter;
+    use crate::tokenizer::token::Token;
     use crate::setup_lox;
     #[test]
     fn term_expression() {
@@ -157,7 +155,7 @@ mod parser_tests {
 
     #[test]
     fn unclosed_paren_at_end() {
-        use crate::_lox_::tokenizer::{token::Token, token_type::TokenType::*};
+        use crate::tokenizer::{token::Token, token_type::TokenType::*};
         let tokens = setup_lox!("1+3+4-(3+4");
         let res = Parser::new(tokens).run();
         // assert_eq!(res, Err(ParserError::UnbalancedParen));
@@ -274,6 +272,26 @@ mod parser_tests {
         let tokens = setup_lox!("1+2, 3-23, 4/5");
         let res = Parser::new(tokens).run().unwrap();
         println!("{}", res.print());
+    }
+}
+
+
+mod parser_evaluator {
+    use crate::{setup_lox, parser::traits::evaluate::Evaluate};
+    use super::*;
+    #[test]
+    fn simple_eval()
+    {
+        // Arithmetic
+        let tokens = setup_lox!("1+3+4*((3+4))"); 
+        let res = Parser::new(tokens).run().unwrap().eval();
+        assert!(res.is_ok());
+        // println!("{:#?}", res);
+        // Ternary expression
+        let tokens = setup_lox!("4 == 5? 1 < 2 ? 1 : 2 : 3");
+        let res = Parser::new(tokens).run().unwrap().eval();
+        // assert!(res.is_ok());
+        println!("{:#?}", res);
     }
 }
 

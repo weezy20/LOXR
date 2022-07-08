@@ -1,6 +1,7 @@
 #![allow(warnings, unused)]
 #![feature(let_chains)]
 //! This module contains all definitions for the Lox compiler and Lox interpreter
+mod tests;
 
 /// ## A module for token definitions, and a lox lexer and scanner
 pub mod tokenizer;
