@@ -76,15 +76,13 @@ impl Evaluate for BinaryExpr {
                     ))
                 }
             }
-            MODULUS => {
-                match (left.is_numeric(), right.is_numeric()) {
-                    (Some(lval), Some(rval)) => Ok(Value::from(lval%rval)),
-                    _ => Err(EvalError::InvalidExpr(
-                        err_exp,
-                        Some("Cannot apply modulo to this binexp".to_string()),
-                    ))
-                }
-            }
+            MODULUS => match (left.is_numeric(), right.is_numeric()) {
+                (Some(lval), Some(rval)) => Ok(Value::from(lval % rval)),
+                _ => Err(EvalError::InvalidExpr(
+                    err_exp,
+                    Some("Cannot apply modulo to this binexp".to_string()),
+                )),
+            },
             SLASH => {
                 if let Some((lval, rval)) = left.is_numeric().and_then(|lval| {
                     if let Some(rval) = right.is_numeric() {
@@ -93,9 +91,7 @@ impl Evaluate for BinaryExpr {
                     None
                 }) {
                     if rval == 0.0 {
-                        Err(EvalError::DivideByZero(
-                            err_exp,
-                        ))
+                        Err(EvalError::DivideByZero(err_exp))
                     } else {
                         Ok(Value::Double(lval / rval))
                     }
@@ -138,6 +134,31 @@ impl Evaluate for BinaryExpr {
                         let mut l = lstr.into_owned();
                         l.push_str(&rstr);
                         return Ok(Value::String(l.to_owned()));
+                    }
+                    (Some(lstr), None) => {
+                        let mut l = lstr.into_owned();
+                        if let Some(n) = right.is_numeric() {
+                            l.push_str(&(n.to_string()));
+                            return Ok(Value::String(l.to_owned()));
+                        } else {
+                            return Err(EvalError::InvalidExpr(
+                                err_exp,
+                                Some("Cannot add this binexp".to_string()),
+                            ));
+                        }
+                    }
+                    (None, Some(rstr)) => {
+                        let mut r = rstr.into_owned();
+                        if let Some(n) = left.is_numeric() {
+                            let mut x = n.to_string();
+                            x.push_str(&r);
+                            return Ok(Value::String(x.to_owned()));
+                        } else {
+                            return Err(EvalError::InvalidExpr(
+                                err_exp,
+                                Some("Cannot add this binexp".to_string()),
+                            ));
+                        }
                     }
                     _ => {
                         return Err(EvalError::InvalidExpr(

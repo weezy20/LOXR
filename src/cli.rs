@@ -20,7 +20,10 @@ pub fn run_cli() {
 }
 pub(in crate::cli) fn run_file(file: &str) {
     let mut lox = Lox::new(file.into());
-    lox.run(file.into());
+    lox.run(None);
+    if lox.had_runtime_error {
+        std::process::exit(70);
+    }
 }
 
 mod repl {
@@ -38,7 +41,7 @@ mod repl {
                 println!("Exiting Lox interpreter");
                 std::process::exit(0);
             }
-            lox_interpreter.run(String::from(input));
+            lox_interpreter.run(Some(String::from(input)));
             buf.clear();
         }
         Ok(())

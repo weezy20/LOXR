@@ -64,7 +64,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
             col: 0, // Initial offset is already set as advance will increment this on each line
         }
     }
-    /// The raison d'etere for this file, note the trailing 's', different from scan_token()
+    /// Note the trailing 's', different from scan_token()
     pub fn scan_tokens(&mut self) {
         // Each turn of this loop should consume as many characters as it wants
         // to produce a single Token
@@ -202,7 +202,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
                                 self.advance();
                             }
                             // EOF
-                            Lox::report_err(
+                            Lox::report_syntax_err(
                                 self.line,
                                 self.col,
                                 format!("Unclosed comment"),
@@ -245,7 +245,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
                                            // however we must continue scanning tokens
                 let q = if unexpected == '\'' { ' ' } else { '\'' };
                 self.lox.had_error = true;
-                Lox::report_err(
+                Lox::report_syntax_err(
                     self.line,
                     self.col,
                     format!("Unexpected character {q}{unexpected}{q}"),
@@ -290,7 +290,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
             } else if self.is_at_end() {
                 let message = format!("Unclosed string");
                 self.lox.had_error = true;
-                Lox::report_err(self.line, self.col, message)
+                Lox::report_syntax_err(self.line, self.col, message)
             }
         }
     }
@@ -321,7 +321,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
         if let Some(c) = self.peek() {
             if c.is_alphabetic() || (decimal_set && c == '.') {
                 self.lox.had_error = true;
-                Lox::report_err(
+                Lox::report_syntax_err(
                     self.line,
                     self.col,
                     format!(

@@ -104,7 +104,7 @@ impl Parser {
                 })));
             } 
             let prev = self.previous.clone().expect("Matches will ensure something here");
-            Lox::report_err(prev.line_number, prev.col, "Invalid Ternary expression".into());
+            Lox::report_syntax_err(prev.line_number, prev.col, "Invalid Ternary expression".into());
             return Err(ParserError::UnexpectedExpression);
         
         }
@@ -238,7 +238,7 @@ impl Parser {
             // if let Some(peeked_token) = self.peek() {
             //     match peeked_token.r#type {
             //         // LEFT_PAREN | LEFT_BRACE | LEFT_SQUARE | RIGHT_BRACE | RIGHT_PAREN | RIGHT_SQUARE => {
-            //         //     Lox::report_err(
+            //         //     Lox::report_syntax_err(
             //         //         peeked_token.line_number, 
             //         //         peeked_token.col, 
             //         //         format!("Unexpected token {peeked_token:#?} after {p:#?}")
@@ -285,7 +285,7 @@ impl Parser {
 fn report_token_error(i: &Option<Token>) {
     if let Some(invalid_token) = i {
         let message = format!("Invalid token: '{}' ,found at what appears to be the start of a Binary Expression", invalid_token.lexeme);
-        Lox::report_err(invalid_token.line_number, invalid_token.col, message);
+        Lox::report_syntax_err(invalid_token.line_number, invalid_token.col, message);
     }
 }
 impl Parser {
@@ -336,7 +336,7 @@ impl Parser {
             return Ok(self.advance());
         }
         else if let Some(peeked_token) = self.tokens.peek() && peeked_token.r#type != EOF { 
-            Lox::report_err(peeked_token.line_number, peeked_token.col, format!("Invalid Token> {peeked_token:#?} encountered\nExpected {expected_token:#?}") );
+            Lox::report_syntax_err(peeked_token.line_number, peeked_token.col, format!("Invalid Token> {peeked_token:#?} encountered\nExpected {expected_token:#?}") );
             Err(ParserError::InvalidToken(self.tokens.peek().cloned()))
         } 
         // None is peeked that means we are at EOF
@@ -351,7 +351,7 @@ impl Parser {
             // We should enter this condition
             if let Some(peeked_token) = self.tokens.peek() && peeked_token.r#type == EOF {
                 // This should report EOF in the error msg
-                Lox::report_err(peeked_token.line_number, peeked_token.col, format!("Unexpected end of file, found {:#?}, expected `{expected_token:?}`", peeked_token.r#type));
+                Lox::report_syntax_err(peeked_token.line_number, peeked_token.col, format!("Unexpected end of file, found {:#?}, expected `{expected_token:?}`", peeked_token.r#type));
             }
             Err(ParserError::UnexpectedExpression)
         }
