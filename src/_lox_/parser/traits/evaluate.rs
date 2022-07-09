@@ -93,9 +93,8 @@ impl Evaluate for BinaryExpr {
                     None
                 }) {
                     if rval == 0.0 {
-                        Err(EvalError::InvalidExpr(
+                        Err(EvalError::DivideByZero(
                             err_exp,
-                            Some("Cannot divide by zero".to_string()),
                         ))
                     } else {
                         Ok(Value::Double(lval / rval))

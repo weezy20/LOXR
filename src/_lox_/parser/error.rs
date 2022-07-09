@@ -34,5 +34,7 @@ pub enum EvalError {
     }) ]
     InvalidExpr(Expression, Option<String>),
     #[error("Cannot evaluate Error production")]
-    ErrorProduction
+    ErrorProduction,
+    #[error("Cannot divide by zero in: {0}")]
+    DivideByZero(Expression)
 }
