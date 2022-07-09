@@ -48,10 +48,13 @@ impl Lox {
         let mut parser = Parser::new(tokens);
         match parser.run() {
             Ok(exp) => match exp.eval() {
-                Ok(result) => println!("{result}"),
-                // Ok(result) => println!("{exp:?}"),
+                // Ok(result) => println!("{result}"),
+                Ok(result) => {
+                    println!("{exp}");
+                    println!("{}", result);
+                }
                 Err(e) => eprintln!("{e}"),
-            }/* println!("Successfully parsed: {std:#?}"), */
+            }, /* println!("Successfully parsed: {std:#?}"), */
             Err(_) => {
                 self.had_error = true;
             }

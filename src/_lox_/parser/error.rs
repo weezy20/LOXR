@@ -26,10 +26,10 @@ pub enum ParserError {
 pub enum EvalError {
     #[error("Expression Evaluation error: {}", match self {
         EvalError::InvalidExpr(exp, custom_msg) if custom_msg.is_some() => { 
-            let msg = custom_msg.as_ref().unwrap();
-            format!("{}\nInvalid Expression: {exp:?}", msg)
+          let msg = custom_msg.as_ref().unwrap();
+          format!("{msg}\nInvalid Expression: {exp}")
         },
-        EvalError::InvalidExpr(exp, _) => { format!("Cannot evaluate: {:?}", exp) }
+        EvalError::InvalidExpr(exp, None) => { format!("Cannot evaluate: {:?}", exp) }
         _ => { "ICE : Uncaught exception".to_string() }
     }) ]
     InvalidExpr(Expression, Option<String>),

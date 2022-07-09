@@ -1,4 +1,4 @@
-use std::fmt::{Display, write};
+use std::fmt::{write, Display};
 
 use crate::tokenizer::token::Token;
 use crate::tokenizer::token_type::TokenType;
@@ -20,6 +20,22 @@ pub enum Expression {
     Lit(Literal),
     Group(Grouping),
     Error(Box<Expression>),
+}
+
+impl Display for Expression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Print display for variants which have the display method otherwise fallback to debug print
+        let out = match &self {
+            Expression::BinExp(x) => format!("{x}"),
+            Expression::UnExp(x) => format!("{x}"),
+            Expression::Lit(x) => format!("{x}"),
+            Expression::CommaExpr(x) => format!("{x:?}"),
+            Expression::TernExp(x) => format!("{x:?}"),
+            Expression::Group(x) => format!("{x:?}"),
+            Expression::Error(x) => format!("{x:?}"),
+        };
+        write!(f, "{out}")
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -45,12 +61,50 @@ impl BinaryExpr {
         }
     }
 }
+impl Display for BinaryExpr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let left = match &*self.left {
+            Expression::CommaExpr(_) => "CommaExpr".into(),
+            Expression::TernExp(_) => "TernaryExpr".into(),
+            Expression::BinExp(_) => "BinExpr".into(),
+            Expression::UnExp(unary_expr) => format!("{unary_expr}"),
+            Expression::Lit(lit) => lit.inner.lexeme.clone(),
+            Expression::Group(_) => "Grouping".into(),
+            Expression::Error(_) => "ErrorProduction".into(),
+        };
+        let right = match &*self.right {
+            Expression::CommaExpr(_) => "CommaExpr".into(),
+            Expression::TernExp(_) => "TernaryExpr".into(),
+            Expression::BinExp(_) => "BinExpr".into(),
+            Expression::UnExp(unary_expr) => format!("{unary_expr}"),
+            Expression::Lit(lit) => format!("{lit}"),
+            Expression::Group(_) => "Grouping".into(),
+            Expression::Error(_) => "ErrorProduction".into(),
+        };
+        write!(f, "{left} {op} {right}", op = self.operator.lexeme)
+    }
+}
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct UnaryExpr {
     pub operator: Token,
     pub operand: Box<Expression>,
 }
+impl Display for UnaryExpr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let operand = match &*self.operand {
+            Expression::CommaExpr(_)
+            | Expression::TernExp(_)
+            | Expression::Group(_)
+            | Expression::Error(_)
+            | Expression::UnExp(_)
+            | Expression::BinExp(_) => "Expr".into(),
+            Expression::Lit(lit) => format!("{lit}"),
+        };
+        write!(f, "{}{operand}", &self.operator.lexeme)
+    }
+}
+
 impl UnaryExpr {
     /// Question: What happens if operand : is a UnaryExpr. Nothing special, valid syntax
     pub fn new(operator: Token, operand: Box<Expression>) -> Result<Self, String> {
@@ -66,6 +120,11 @@ impl UnaryExpr {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Literal {
     pub inner: Token,
+}
+impl Display for Literal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.inner.lexeme)
+    }
 }
 impl Literal {
     pub fn new(inner: Token) -> Result<Self, String> {

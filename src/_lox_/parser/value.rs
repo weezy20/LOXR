@@ -35,9 +35,16 @@ impl Value {
 }
 impl std::cmp::PartialOrd for Value {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        use std::cmp::Ordering::*;
         match (self.is_numeric(), other.is_numeric()) {
             (Some(l), Some(r)) => l.partial_cmp(&r),
-            _ => None,
+            _ => match (&self, &other) {
+                (Value::Bool(l), Value::Bool(r)) => l.partial_cmp(&r),
+                (Value::String(l), Value::String(r)) => l.partial_cmp(&r),
+                (Value::Nil, Value::Bool(_)) => None, // We disallow nil to be compared against booleans, may change if needed
+                (Value::Nil, Value::Nil) => Some(Equal),
+                _ => None,
+            },
         }
     }
 }
