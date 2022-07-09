@@ -120,7 +120,7 @@ impl Parser {
         if self.error_production.len() > 0 {
             eprintln!("Error productions in Parser cache : {:?}", self.error_production);
             _had_error = true;
-            println!("Discarding Malformed expression:\n{expr:#?}");
+            println!("Discarding Malformed expression:\n{expr:?}");
             let _ = Expression::Error(expr); // 
             self.synchronize();
             // Time to clear error cache

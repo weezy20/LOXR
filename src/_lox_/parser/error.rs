@@ -1,7 +1,7 @@
 use crate::parser::expressions::Expression;
 use crate::tokenizer::token::Token;
 use thiserror::Error;
-
+use colored::Colorize;
 #[allow(unused)]
 #[derive(Error, Debug, PartialEq)]
 pub enum ParserError {
@@ -27,10 +27,10 @@ pub enum EvalError {
     #[error("Expression Evaluation error: {}", match self {
         EvalError::InvalidExpr(exp, custom_msg) if custom_msg.is_some() => { 
           let msg = custom_msg.as_ref().unwrap();
-          format!("{msg}\nInvalid Expression: {exp}")
+          format!("{msg}\nInvalid Expression: {exp}").red()
         },
-        EvalError::InvalidExpr(exp, None) => { format!("Cannot evaluate: {:?}", exp) }
-        _ => { "ICE : Uncaught exception".to_string() }
+        EvalError::InvalidExpr(exp, None) => { format!("Cannot evaluate: {:?}", exp).red() }
+        _ => { "ICE : Uncaught exception".to_string().red() }
     }) ]
     InvalidExpr(Expression, Option<String>),
     #[error("Cannot evaluate Error production")]

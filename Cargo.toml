@@ -15,5 +15,6 @@ path = "src/main.rs"
 
 [dependencies]
 better_peekable = "0.2.4"
+colored = "2.0.0"
 lazy_static = "1.4.0"
 thiserror = "1.0.30"

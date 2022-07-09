@@ -12,10 +12,10 @@ pub mod parser;
 /// ## Interpreter for Parser output
 pub mod interpreter;
 
-use crate::parser::Parser;
-
 use crate::parser::traits::evaluate::Evaluate;
+use crate::parser::Parser;
 use crate::tokenizer::scanner::Scanner;
+use colored::Colorize;
 #[derive(Debug)]
 pub struct Lox {
     /// Error encountered?
@@ -34,7 +34,12 @@ impl Lox {
     }
     /// Report `message` as error on `line`
     pub fn report_err(line: usize, col: usize, message: String) {
-        eprintln!("Syntax Error: {message} at line {line}, column {col}");
+        eprintln!(
+            "{syntax_error}: {message} at {line_no}, {col_no}",
+            syntax_error = "Syntax Error".red(),
+            line_no = format!("line {line}").yellow(),
+            col_no = format!("column {col}").yellow()
+        );
     }
     /// Parse a `lox` string as `lox` tokens and run them
     pub fn run(&mut self, src: String) {
@@ -55,7 +60,8 @@ impl Lox {
                 }
                 Err(e) => eprintln!("{e}"),
             }, /* println!("Successfully parsed: {std:#?}"), */
-            Err(_) => {
+            Err(e) => {
+                eprintln!("{e}");
                 self.had_error = true;
             }
         }
