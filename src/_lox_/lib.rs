@@ -49,7 +49,8 @@ impl Lox {
         match parser.run() {
             Ok(exp) => match exp.eval() {
                 Ok(result) => println!("{result}"),
-                Err(e) => eprintln!("{e:?}"),
+                // Ok(result) => println!("{exp:?}"),
+                Err(e) => eprintln!("{e}"),
             }/* println!("Successfully parsed: {std:#?}"), */
             Err(_) => {
                 self.had_error = true;

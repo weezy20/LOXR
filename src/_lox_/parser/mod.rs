@@ -39,7 +39,7 @@ pub mod expressions;
 /// *binary*         → `expression operator expression ;`
 ///
 /// *operator*       → `"==" | "!=" | "<" | "<=" | ">" | ">="
-///                  | "+"  | "-"  | "*" | "/" ;`
+///                  | "+"  | "-"  | "*" | "/" | "%";`
 ///
 /// Furthermore if we bake in the precedence rules it looks like this,
 /// where top to bottom indicates the level of precedence of a given rule, top being matched the least
@@ -55,7 +55,7 @@ pub mod expressions;
 ///
 /// *term*        → `factor ("+"|"-" factor)*;`
 ///
-/// *factor*      → `unary (( "/" | "*" ) unary )*;`
+/// *factor*      → `unary (( "%" | "/" | "*" ) unary )*;`
 ///
 /// *unary*       → `("-" | "!") unary | primary;`
 ///
@@ -198,7 +198,7 @@ impl Parser {
             },
             Err(e) => return Err(e),
         };
-        while self.matches(vec![STAR, SLASH]) {
+        while self.matches(vec![STAR, SLASH, MODULUS]) {
             let operator: Token = self
             .previous
             .take()

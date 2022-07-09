@@ -138,6 +138,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
             ',' => self.add_token(TokenType::COMMA),
             '-' => self.add_token(TokenType::MINUS),
             '+' => self.add_token(TokenType::PLUS),
+            '%' => self.add_token(TokenType::MODULUS),
             '*' => self.add_token(TokenType::STAR),
             ';' => self.add_token(TokenType::SEMICOLON),
             '?' => self.add_token(TokenType::TERNARYC),

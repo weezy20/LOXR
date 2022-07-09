@@ -76,6 +76,15 @@ impl Evaluate for BinaryExpr {
                     ))
                 }
             }
+            MODULUS => {
+                match (left.is_numeric(), right.is_numeric()) {
+                    (Some(lval), Some(rval)) => Ok(Value::from(lval%rval)),
+                    _ => Err(EvalError::InvalidExpr(
+                        err_exp,
+                        Some("Cannot apply modulo to this binexp".to_string()),
+                    ))
+                }
+            }
             SLASH => {
                 if let Some((lval, rval)) = left.is_numeric().and_then(|lval| {
                     if let Some(rval) = right.is_numeric() {
@@ -143,35 +152,35 @@ impl Evaluate for BinaryExpr {
                 Some(o) => Ok(Value::from(o == Ordering::Greater)),
                 None => Err(EvalError::InvalidExpr(
                     err_exp,
-                    Some("Cannot compare {left:?} {right:?}".into()),
+                    Some(format!("Cannot compare {left:?} with {right:?}")),
                 )),
             },
             GREATER_EQUAL => match left.partial_cmp(&right) {
                 Some(o) => Ok(Value::from(o == Ordering::Greater || o == Ordering::Equal)),
                 None => Err(EvalError::InvalidExpr(
                     err_exp,
-                    Some("Cannot compare {left:?} {right:?}".into()),
+                    Some(format!("Cannot compare {left:?} with {right:?}")),
                 )),
             },
             LESS => match left.partial_cmp(&right) {
                 Some(o) => Ok(Value::from(o == Ordering::Less)),
                 None => Err(EvalError::InvalidExpr(
                     err_exp,
-                    Some("Cannot compare {left:?} {right:?}".into()),
+                    Some(format!("Cannot compare {left:?} with {right:?}")),
                 )),
             },
             LESS_EQUAL => match left.partial_cmp(&right) {
                 Some(o) => Ok(Value::from(o == Ordering::Less || o == Ordering::Equal)),
                 None => Err(EvalError::InvalidExpr(
                     err_exp,
-                    Some("Cannot compare {left:?} {right:?}".into()),
+                    Some(format!("Cannot compare {left:?} with {right:?}")),
                 )),
             },
             EQUAL_EQUAL => match left.partial_cmp(&right) {
                 Some(o) => Ok(Value::from(o == Ordering::Equal)),
                 None => Err(EvalError::InvalidExpr(
                     err_exp,
-                    Some("Cannot compare {left:?} {right:?}".into()),
+                    Some(format!("Cannot compare {left:?} with {right:?}")),
                 )),
             },
             _ => Err(EvalError::InvalidExpr(err_exp, None)),

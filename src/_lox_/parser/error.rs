@@ -27,7 +27,7 @@ pub enum EvalError {
     #[error("Expression Evaluation error: {}", match self {
         EvalError::InvalidExpr(exp, custom_msg) if custom_msg.is_some() => { 
             let msg = custom_msg.as_ref().unwrap();
-            format!("{}\nExpression: {exp:?}", msg)
+            format!("{}\nInvalid Expression: {exp:?}", msg)
         },
         EvalError::InvalidExpr(exp, _) => { format!("Cannot evaluate: {:?}", exp) }
         _ => { "ICE : Uncaught exception".to_string() }

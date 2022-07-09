@@ -12,6 +12,7 @@ pub enum TokenType {
     DOT,           // .
     MINUS,         // -
     PLUS,          // +
+    MODULUS,       // %
     SEMICOLON,     // ;
     SLASH,         // /
     STAR,          // *
@@ -81,6 +82,7 @@ impl ToString for TokenType {
             DOT => ".",
             MINUS => "-",
             PLUS => "+",
+            MODULUS => "%",
             SEMICOLON => ";",
             SLASH => "/",
             STAR => "*",
