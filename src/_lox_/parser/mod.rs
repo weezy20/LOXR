@@ -115,19 +115,23 @@ impl Parser {
         // This creates a left associative nested tree of binary operator nodes
         // The previous `expr` becomes the new `left` of an equality expression if matches returns true
         
-        let mut expr: Box<Expression> = self.comparison()?; 
-        let mut _had_error = false;
-        if self.error_production.len() > 0 {
-            eprintln!("Error productions in Parser cache : {:?}", self.error_production);
-            _had_error = true;
-            println!("Discarding Malformed expression:\n{expr:?}");
-            let _ = Expression::Error(expr); // 
-            self.synchronize();
-            // Time to clear error cache
-            self.error_production.clear();
-            return self.comma_expression();
-        }
-
+        let mut expr: Box<Expression> = match self.comparison() {
+            Ok(expr) => expr,
+            Err(e) if self.error_production.len() > 0 => {
+                let mut _had_error = false;
+                 {
+                    eprintln!("Error productions in Parser cache : {:?}", self.error_production);
+                    _had_error = true;
+                    // println!("Discarding Malformed expression:\n{expr:?}");
+                    // let _ = Expression::Error(expr); // 
+                    self.synchronize();
+                    // Time to clear error cache
+                    self.error_production.clear();
+                    return self.comma_expression();
+                }
+            },
+            Err(e) => return Err(e)
+        }; 
         while self.matches(vec![BANG_EQUAL, EQUAL_EQUAL]) {
             let operator: Token = self
                 .previous
@@ -235,19 +239,22 @@ impl Parser {
             // Previous is sure to exist if this branch is entered
             // Also constructing a literal is infallible at this stage
             let _p = self.previous.clone().expect("Previous should have something here");
-            // if let Some(peeked_token) = self.peek() {
-            //     match peeked_token.r#type {
-            //         // LEFT_PAREN | LEFT_BRACE | LEFT_SQUARE | RIGHT_BRACE | RIGHT_PAREN | RIGHT_SQUARE => {
-            //         //     Lox::report_syntax_err(
-            //         //         peeked_token.line_number, 
-            //         //         peeked_token.col, 
-            //         //         format!("Unexpected token {peeked_token:#?} after {p:#?}")
-            //         //     );
-            //         //     return Err(ParserError::InvalidToken(Some(peeked_token).cloned()));
-            //         // }
-            //         _ => {}
-            //     }
-            // }
+            let x = self.peek().cloned();
+            if let Some(peeked_token) = x {
+                match peeked_token.r#type {
+                    LEFT_PAREN | LEFT_BRACE | LEFT_SQUARE | RIGHT_BRACE | RIGHT_PAREN | RIGHT_SQUARE => {
+                        Lox::report_syntax_err(
+                            peeked_token.line_number, 
+                            peeked_token.col, 
+                            format!("Unexpected token {peeked_token:#?} after {_p:#?}")
+                        );
+                        self.parser_corrupt = true;
+                        self.error_production.push(self.previous.clone().expect("Matches will always be something"));
+                        return Err(ParserError::InvalidToken(Some(peeked_token)));
+                    }
+                    _ => {}
+                }
+            }
             Ok(Box::new(Expression::Lit(
                 Literal::new(self.previous.take().unwrap()).unwrap(),
             )))
