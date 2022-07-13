@@ -29,7 +29,16 @@ impl Display for Expression {
             Expression::BinExp(x) => format!("{x}"),
             Expression::UnExp(x) => format!("{x}"),
             Expression::Lit(x) => format!("{x}"),
-            Expression::CommaExpr(x) => format!("{x:?}"),
+            Expression::CommaExpr(x) => {
+                let mut res = String::new();
+                res.push_str("[\n");
+                for item in x {
+                    res.push_str(&format!("\t{item},\n"));
+                }
+                let mut res = res.trim_end_matches("\n").to_owned();
+                res.push_str("\n]");
+                res
+            },
             Expression::TernExp(x) => format!("{x:?}"),
             Expression::Group(x) => format!("{x:?}"),
             Expression::Error(x) => format!("{x:?}"),

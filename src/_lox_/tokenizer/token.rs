@@ -51,6 +51,11 @@ impl Token {
         )
     }
 }
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
+    }
+}
 
 impl From<TokenType> for Token {
     /// Create a token for test purposes

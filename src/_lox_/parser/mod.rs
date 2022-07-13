@@ -242,15 +242,15 @@ impl Parser {
             let x = self.peek().cloned();
             if let Some(peeked_token) = x {
                 match peeked_token.r#type {
-                    LEFT_PAREN | LEFT_BRACE | LEFT_SQUARE | RIGHT_BRACE | RIGHT_PAREN | RIGHT_SQUARE => {
+                    LEFT_PAREN | LEFT_BRACE | LEFT_SQUARE => {
                         Lox::report_syntax_err(
                             peeked_token.line_number, 
                             peeked_token.col, 
-                            format!("Unexpected token {peeked_token:#?} after {_p:#?}")
+                            format!("Unexpected token {peeked_token} after {_p}")
                         );
                         self.parser_corrupt = true;
                         self.error_production.push(self.previous.clone().expect("Matches will always be something"));
-                        return Err(ParserError::InvalidToken(Some(peeked_token)));
+                        // return Err(ParserError::InvalidToken(Some(peeked_token)));
                     }
                     _ => {}
                 }

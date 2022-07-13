@@ -20,7 +20,7 @@ impl Evaluate for Expression {
                     if idx != expr_list.len() - 1 {
                         // eval and discard
                         match item.eval() {
-                            Ok(x) => println!("Evaluating {item:?} got -> {x:?}"),
+                            Ok(x) => { /*println!("Evaluating {item:?} got -> {x:?}")*/ },
                             Err(e) => println!("Evaluating {item:?} got error -> {e:?}"),
                         }
                     }
@@ -30,7 +30,7 @@ impl Evaluate for Expression {
                 } else {
                     Err(EvalError::InvalidExpr(
                         self.clone(),
-                        Some("Cannot evaluate comma expression".into()),
+                        Some(format!("Cannot evaluate comma expression {:?}", expr_list)),
                     ))
                 }
             }
