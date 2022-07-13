@@ -7,6 +7,7 @@ use expressions::Expression;
 use std::vec::IntoIter;
 
 use self::error::ParserError;
+use self::statement::Stmt;
 
 use crate::Lox;
 /// ParserError
@@ -18,8 +19,16 @@ pub mod traits;
 pub mod value;
 /// Expression types
 pub mod expressions;
+/// Statements
+pub mod statement;
 
 /// Parser grammar:
+/// program          → `statement`* EOF;
+/// 
+/// statement        → `exprStmt` | printStmt ;
+/// exprStmt         → `expression` ";" ;
+/// printStmt        → print `expression` ";" ;
+/// 
 /// A comma expression evaluates to the final expression
 /// *comma expr*     → `expression , (expression)* | "(" expression ")"`;
 ///
@@ -72,6 +81,9 @@ pub struct Parser {
 /// In a recursive descent parser, the least priority rule is matched first
 /// as we descend down into nested grammer rules
 impl Parser {
+    pub fn parse_expression(&mut self) -> Result<Box<Expression>, ParserError> {
+        self.comma_expression()
+    }
      /// *comma expr* → `expression , (expression)* | "(" expression ")"`;
      pub fn comma_expression(&mut self) -> Result<Box<Expression>, ParserError> {
         let expr = self.expression()?;
@@ -399,8 +411,34 @@ impl Parser {
             parser_corrupt: false,
         }
     }
-    /// Starts the parser
+    /// Parse as an expression
     pub fn run(&mut self) -> Result<Box<Expression>, ParserError> {
-        self.comma_expression()
+        self.parse_expression()
+    }
+    /// Parse as a statement
+    pub fn statement(&mut self) -> Stmt {
+        if self.matches(vec![PRINT]) {
+            self.print_statement()
+        } else {
+            self.expression_statement()
+        }
+    }
+    pub fn parse(&mut self) -> Vec<Stmt> {
+        let mut stmts = vec![];
+        while !self.is_at_end() {
+            stmts.push(self.statement());
+        }
+        stmts
+    }
+    pub fn print_statement(&mut self) -> Stmt {
+        let val = self.parse_expression().expect("Unwrap for now");
+        let _t = self.consume(SEMICOLON).expect("ParserErr").expect("Token always present, infallible");
+        Stmt::Print(val)
+    }
+    pub fn expression_statement(&mut self) -> Stmt {
+        let val = self.parse_expression().expect("Unwrap for now");
+        // TODO: Errors on EOF not preceded by semicolon
+        let _t = self.consume(SEMICOLON).expect("ParserErr").expect("Token always present, infallible");
+        Stmt::ExprStmt(val)
     }
 }

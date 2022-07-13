@@ -96,6 +96,7 @@ impl Lox {
         scanner.scan_tokens();
         let tokens = scanner.tokens;
         let mut parser = Parser::new(tokens);
+        println!("Statements: {:?}", parser.parse());
         match parser.run() {
             Ok(exp) => match exp.eval() {
                 // Ok(result) => println!("{result}"),
