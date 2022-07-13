@@ -59,10 +59,10 @@ pub(in crate::cli) fn run_file(file: &str) {
 mod repl {
     use super::*;
     use rustyline::{error::ReadlineError, Editor};
-    use std::{io, io::Write};
     #[allow(unreachable_code)]
     pub(crate) fn start_repl() -> std::io::Result<()> {
         let mut lox_interpreter = Lox::new(Default::default());
+        #[allow(unused_assignments)]
         let mut buf = String::new();
         let mut rl = Editor::<()>::new();
         if rl.load_history("history.txt").is_err() {
