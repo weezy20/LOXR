@@ -15,7 +15,7 @@ pub fn run_cli() {
     } else if repl::start_repl().is_err() {
         panic!("REPL error");
     } else if args.len() > 2 {
-        eprintln!("Usage \"rlox {{lox file}}\"");
+        eprintln!("Usage \"loxr {{lox file}}\"");
     }
 }
 pub(in crate::cli) fn run_file(file: &str) {
@@ -26,16 +26,71 @@ pub(in crate::cli) fn run_file(file: &str) {
     }
 }
 
+// mod repl {
+//     use super::*;
+//     use std::{io, io::Write};
+//     #[allow(unreachable_code)]
+//     pub(crate) fn start_repl() -> std::io::Result<()> {
+//         let mut lox_interpreter = Lox::new(Default::default());
+//         let mut buf = String::new();
+//         loop {
+//             print_prompt(&mut buf)?;
+//             let input = buf.trim();
+//             if input == "exit" || input == "quit" {
+//                 println!("Exiting Lox interpreter");
+//                 std::process::exit(0);
+//             }
+//             lox_interpreter.run(Some(String::from(input)));
+//             buf.clear();
+//         }
+//         Ok(())
+//     }
+
+//     #[inline(always)]
+//     fn print_prompt(buf: &mut String) -> io::Result<()> {
+//         // Edit this print argument to use your app's name
+//         print!("Lox > ");
+//         io::stdout().lock().flush()?;
+//         io::stdin().read_line(buf)?;
+//         Ok(())
+//     }
+// }
+
 mod repl {
     use super::*;
-
+    use rustyline::{error::ReadlineError, Editor};
     use std::{io, io::Write};
     #[allow(unreachable_code)]
     pub(crate) fn start_repl() -> std::io::Result<()> {
         let mut lox_interpreter = Lox::new(Default::default());
         let mut buf = String::new();
+        let mut rl = Editor::<()>::new();
+        if rl.load_history("history.txt").is_err() {
+            // println!("No previous history.");
+        }
         loop {
-            print_prompt(&mut buf)?;
+            // print_prompt(&mut buf)?;
+            let line = rl.readline("Lox > ");
+            match line {
+                Ok(line) => {
+                    rl.add_history_entry(line.as_str());
+                    buf = line;
+                }
+                Err(ReadlineError::Interrupted) => {
+                    println!("CTRL-C");
+                    println!("Exiting Lox interpreter");
+                    std::process::exit(0);
+                    break;
+                }
+                Err(ReadlineError::Eof) => {
+                    println!("CTRL-D");
+                    break;
+                }
+                Err(e) => {
+                    eprintln!("Unexpected error : {e:?}");
+                    std::process::exit(1);
+                }
+            }
             let input = buf.trim();
             if input == "exit" || input == "quit" {
                 println!("Exiting Lox interpreter");
@@ -44,15 +99,6 @@ mod repl {
             lox_interpreter.run(Some(String::from(input)));
             buf.clear();
         }
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn print_prompt(buf: &mut String) -> io::Result<()> {
-        // Edit this print argument to use your app's name
-        print!("Lox > ");
-        io::stdout().lock().flush()?;
-        io::stdin().read_line(buf)?;
         Ok(())
     }
 }
