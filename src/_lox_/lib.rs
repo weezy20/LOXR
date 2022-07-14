@@ -9,12 +9,16 @@ pub mod tokenizer;
 /// ## Parser module that defines Lox syntactical grammar and constructs ASTs
 pub mod parser;
 
+/// ## Interpreter 
+pub mod interpreter;
+
 // use std::borrow::{Cow, Borrow};
 
 use crate::parser::traits::evaluate::Evaluate;
 use crate::parser::Parser;
 use crate::tokenizer::scanner::Scanner;
 use colored::Colorize;
+use interpreter::Interpreter;
 use tokenizer::token::Token;
 #[derive(Debug)]
 pub struct Lox {
@@ -98,11 +102,13 @@ impl Lox {
         let mut parser = Parser::new(tokens);
         {
             let mut parser = parser.clone();
+            let mut interpreter = Interpreter::new(parser);
+            interpreter.interpret();
             // Print statements
-            println!("Statements: ");
-            for s in parser.parse() {
-                println!("-> {s}");
-            }
+            // println!("Statements: ");
+            // for s in parser.parse() {
+            //     println!("-> {s}");
+            // }
         }
         // match parser.run() {
         //     Ok(exp) => match exp.eval() {

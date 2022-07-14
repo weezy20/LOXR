@@ -419,8 +419,6 @@ impl Parser {
     }
     /// Parse as a statement
     pub fn statement(&mut self) -> Stmt {
-        print!("first {:?}", self.tokens.peek());
-        print!("second {:?}", self.tokens.peek_n(1));
         if self.matches(vec![PRINT]) {
             self.print_statement()
         } else {
