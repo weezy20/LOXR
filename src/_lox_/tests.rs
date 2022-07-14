@@ -161,7 +161,7 @@ mod parser_tests {
         // assert_eq!(res, Err(ParserError::UnbalancedParen));
         assert_eq!(
             res, // UnexpectedExpression
-            Err(ParserError::UnexpectedExpression)
+            Err(ParserError::UnexpectedEOF)
         );
     }
     // #[ignore = "Lox cannot handle beyond simple arithmetic expressions at this point"]

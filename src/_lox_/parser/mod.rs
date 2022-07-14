@@ -21,9 +21,16 @@ pub mod value;
 pub mod expressions;
 /// Statements
 pub mod statement;
+/// Variable Declaration
+pub mod variable;
 
 /// Parser grammar:
-/// program          → `statement`* EOF;
+/// program          → `declaration`* EOF;
+/// 
+/// declaration      → `variableDecl` | statement;
+/// 
+/// We may declare a variable or declare and assign the result of some expression to it
+/// variableDecl     → "var" IDENTIFIER ("=" expression)? ";" ;
 /// 
 /// statement        → `exprStmt` | printStmt ;
 /// exprStmt         → `expression` ";" ;

@@ -1,5 +1,4 @@
 use colored::Colorize;
-
 use crate::parser::{
     statement::Stmt,
     traits::{evaluate::Evaluate, printer::ExpressionPrinter},
