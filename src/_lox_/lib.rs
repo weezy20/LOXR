@@ -104,24 +104,24 @@ impl Lox {
                 println!("-> {s}");
             }
         }
-        match parser.run() {
-            Ok(exp) => match exp.eval() {
-                // Ok(result) => println!("{result}"),
-                Ok(result) => {
-                    println!("{exp}");
-                    println!("{}", result);
-                    // We don't care about runtime errors in REPL mode, yet interesting to note, once a user does
-                    // enter faulty code, self.had_runtime_error stays on. 
-                    // println!("had error {}", self.had_error);
-                    // println!("had runtime error {}", self.had_runtime_error);
-                }
-                Err(e) => eprintln!("{e}"),
-            }, /* println!("Successfully parsed: {std:#?}"), */
-            Err(e) => {
-                eprintln!("{e}");
-                self.had_runtime_error = true;
-            }
-        }
+        // match parser.run() {
+        //     Ok(exp) => match exp.eval() {
+        //         // Ok(result) => println!("{result}"),
+        //         Ok(result) => {
+        //             println!("{exp}");
+        //             println!("{}", result);
+        //             // We don't care about runtime errors in REPL mode, yet interesting to note, once a user does
+        //             // enter faulty code, self.had_runtime_error stays on. 
+        //             // println!("had error {}", self.had_error);
+        //             // println!("had runtime error {}", self.had_runtime_error);
+        //         }
+        //         Err(e) => eprintln!("{e}"),
+        //     }, /* println!("Successfully parsed: {std:#?}"), */
+        //     Err(e) => {
+        //         eprintln!("{e}");
+        //         self.had_runtime_error = true;
+        //     }
+        // }
         return;
     }
 }

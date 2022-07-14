@@ -9,6 +9,7 @@ use TokenType::*;
 lazy_static! {
     static ref KEYWORDS: HashMap<&'static str, TokenType> = {
         let mut h = HashMap::new();
+        h.insert("print", PRINT);
         h.insert("and", AND);
         h.insert("class", CLASS);
         h.insert("else", ELSE);
@@ -30,6 +31,9 @@ lazy_static! {
 
 use super::{token::Token, token_type::TokenType};
 #[derive(Debug)]
+// TODO : at this point source is a reference to Lox which is why we are trying to get a &mut and & from the same instance
+// This means every time we pass a source string we have to unnecessarily clone it and then pass a reference to it. There's room
+// for refactoring here
 pub struct Scanner<'a: 'b, 'b> {
     /// Source string to tokenize
     pub(crate) source: &'a str,
@@ -185,9 +189,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
                     let mut comment = true;
                     while comment {
                         if self.peek().is_some() && self.peek_next().is_some() {
-                            if self.peek().unwrap() == '*'
-                                && self.peek_next().unwrap() == '/'
-                            {
+                            if self.peek().unwrap() == '*' && self.peek_next().unwrap() == '/' {
                                 self.advance();
                                 self.advance();
                                 comment = false;
@@ -238,7 +240,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
             // Identifiers and KEYWORDS
             c if c == '_' || c.is_ascii_alphabetic() => {
                 let col = self.col;
-                self.identifier(col);
+                self.identifier_or_keyword(col);
             }
             unexpected => {
                 self.lox.had_error = true; // Notify the lox machine that error has encountered so we can ignore running the file
@@ -332,7 +334,8 @@ impl<'a, 'b> Scanner<'a, 'b> {
             }
         }
     }
-    fn identifier(&mut self, col: usize) {
+    // Scan as identifier
+    fn identifier_or_keyword(&mut self, col: usize) {
         let mut next_char = self.peek();
         while matches!(next_char, Some(c) if c.is_ascii_alphanumeric() || c == '_') {
             // Yes that means you can have variables idents like ___ and __
