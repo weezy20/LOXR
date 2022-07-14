@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use crate::parser::{
     statement::Stmt,
     traits::{evaluate::Evaluate, printer::ExpressionPrinter},
@@ -12,13 +14,22 @@ impl Interpreter {
     }
     pub fn interpret(&mut self) {
         for stmt in self.0.iter() {
+            let val = match match stmt {
+                Stmt::ExprStmt(e) | Stmt::Print(e) => e.eval(),
+            } {
+                Ok(val) => val,
+                Err(e) => {
+                    eprintln!("{} {e}", "Interpreter error:".red());
+                    continue;
+                }
+            };
+
             match stmt {
                 Stmt::ExprStmt(e) => {
-                    let _ = e.eval();
+                    // let _ = e.eval();
                 }
                 Stmt::Print(e) => {
-                    let val = e.eval();
-                    println!("{}", val.expect("DANGER UNWRAP of STATEMENT"));
+                    println!("{}", val);
                 }
             }
         }
