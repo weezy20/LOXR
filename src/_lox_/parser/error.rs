@@ -18,6 +18,8 @@ pub enum ParserError {
     MissingOperand,
     #[error("Expected Expression")]
     UnexpectedExpression,
+    #[error("Expected one of }}, ; but found EOF")]
+    UnexpectedEOF,
     #[error("Error production")]
     ErrorProduction(Box<Expression>),
 }

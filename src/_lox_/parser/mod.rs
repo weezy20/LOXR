@@ -71,6 +71,7 @@ pub mod statement;
 /// *primary*     → `literal | "(" expression ")";`
 
 #[derive(Debug, Clone)]
+// TODO : Add a (line, col) for syntax error reporting
 pub struct Parser {
     tokens: BPeekable<IntoIter<Token>>,
     current: usize,
@@ -371,6 +372,7 @@ impl Parser {
             if let Some(peeked_token) = self.tokens.peek() && peeked_token.r#type == EOF {
                 // This should report EOF in the error msg
                 Lox::report_syntax_err(peeked_token.line_number, peeked_token.col, format!("Unexpected end of file, found {:#?}, expected `{expected_token:?}`", peeked_token.r#type));
+                return Err(ParserError::UnexpectedEOF);
             }
             Err(ParserError::UnexpectedExpression)
         }
@@ -431,14 +433,20 @@ impl Parser {
         stmts
     }
     pub fn print_statement(&mut self) -> Stmt {
-        let val = self.parse_expression().expect("Unwrap for now");
-        let _t = self.consume(SEMICOLON).expect("ParserErr").expect("Token always present, infallible");
+        let val = self.parse_expression().expect("DANGER Unwrap for now");
+        let _t = self.consume(SEMICOLON).expect("DANGER UNWRAP : ParserErr, expected semicolon").expect("Token always present, infallible");
         Stmt::Print(val)
     }
     pub fn expression_statement(&mut self) -> Stmt {
-        let val = self.parse_expression().expect("Unwrap for now");
+        let val = self.parse_expression().expect("DANGER Unwrap for now");
         // TODO: Errors on EOF not preceded by semicolon
-        let _t = self.consume(SEMICOLON).expect("ParserErr").expect("Token always present, infallible");
+        match self.consume(SEMICOLON) {
+            Ok(t) => {},
+            Err(ParserError::UnexpectedEOF) => {
+            },
+            Err(e) => eprintln!("{e}")
+        }
+
         Stmt::ExprStmt(val)
     }
 }
