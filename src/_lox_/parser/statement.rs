@@ -1,8 +1,9 @@
 use super::*;
-#[derive(Debug, derive_more::Display)]
+use derive_more::{From, Display};
+#[derive(Debug, Display)]
 /// A statement is always followed by a `;`.
 /// A lox program is made up of lox statements
-#[display(fmt = "{}", )]
+#[display(fmt = "{}")]
 pub enum Stmt {
     /// An expression statement lets you place an expression where a statement is expected
     /// They exist to evaluate expressions that may have side effects
@@ -13,3 +14,14 @@ pub enum Stmt {
     Print(Box<Expression>),
 }
 
+/// Since var decls don't make sense every where we wrap Stmt inside Declaration such that any place
+/// that cannot accept a declaration can still accept a statement
+#[derive(Debug, Display, From)]
+pub enum Declaration {
+    DStmt(Stmt),
+    #[display(fmt = "VarDecl")]
+    VarDecl {
+        name: String,
+        initializer: Option<Box<Expression>>,
+    },
+}
