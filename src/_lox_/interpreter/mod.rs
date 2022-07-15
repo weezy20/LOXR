@@ -21,6 +21,10 @@ impl Interpreter {
             let val = match match stmt {
                 DStmt(s) => match s {
                     Stmt::ExprStmt(e) | Stmt::Print(e) => e.eval(),
+                    Stmt::ErrStmt { message } => {
+                        eprintln!("InterpreterError: {message}");
+                        Ok(Value::Nil)
+                    },
                 },
                 VarDecl { name, initializer } => {
                     println!("var {name} declared to {initializer:?}");

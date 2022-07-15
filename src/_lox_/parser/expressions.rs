@@ -126,7 +126,7 @@ impl UnaryExpr {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Default)]
 pub struct Literal {
     pub inner: Token,
 }

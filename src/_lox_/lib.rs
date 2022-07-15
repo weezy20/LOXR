@@ -1,5 +1,6 @@
 #![allow(warnings, unused)]
 #![feature(let_chains)]
+#![feature(box_syntax)]
 //! This module contains all definitions for the Lox compiler and Lox interpreter
 mod tests;
 

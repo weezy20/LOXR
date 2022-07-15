@@ -12,6 +12,10 @@ pub enum Stmt {
     /// A print statement just evaluates the expression and prints to console
     #[display(fmt = "PrintStmt : [{}]", "*_0")]
     Print(Box<Expression>),
+    /// Represents an Error, maybe moved to Declaration
+    ErrStmt {
+        message : String
+    }
 }
 
 /// Since var decls don't make sense every where we wrap Stmt inside Declaration such that any place

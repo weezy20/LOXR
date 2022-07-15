@@ -479,13 +479,20 @@ impl Parser {
         Stmt::Print(val)
     }
     fn expression_statement(&mut self) -> Stmt {
-        let val = self.parse_expression().expect("DANGER Unwrap for now");
+        
+        let val = match self.parse_expression() {
+            Ok(expression) => expression,
+            Err(err) => { return Stmt::ErrStmt { message : format!("{err}")}},
+        };
         // TODO: Errors on EOF not preceded by semicolon
         match self.consume(SEMICOLON) {
             Ok(t) => {},
             Err(ParserError::UnexpectedEOF) => {
             },
-            Err(e) => eprintln!("{e}")
+            Err(e) =>{                
+                todo!("handle this for expression //{{comment}} ");
+                eprintln!("{e}");
+            }
         }
 
         Stmt::ExprStmt(val)
