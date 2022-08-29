@@ -431,6 +431,7 @@ impl Parser {
         while !self.is_at_end() {
             stmts.push(self.declaration());
             // BUG_FIXED: If var ? or an ErrDecl is returned, this loop never ends
+            // BUG: Doesn't synchronize on multiline comments
             loc!(format!("Number of statements : {}", stmts.len()));
         }
         stmts
