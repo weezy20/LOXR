@@ -1,5 +1,5 @@
 use super::*;
-use derive_more::{From, Display};
+use derive_more::{Display, From};
 #[derive(Debug, Display)]
 /// A statement has side effects that may affect the `state` a lox program is in
 /// A statement is always followed by a `;`.
@@ -14,11 +14,9 @@ pub enum Stmt {
     #[display(fmt = "PrintStmt : [{}]", "*_0")]
     Print(Box<Expression>),
     /// Represents a syntax error, maybe moved to Declaration
-    ErrStmt {
-        message : String
-    },
+    ErrStmt { message: String },
     /// Represents a comment
-    Empty
+    Empty,
 }
 
 /// Since var decls don't make sense every where we wrap Stmt inside Declaration such that any place
@@ -32,4 +30,22 @@ pub enum Declaration {
         name: String,
         initializer: Option<Box<Expression>>,
     },
+    // Represents an Error, should be evaluated to Nil 
+    ErrDecl 
+}
+
+// Since we are using Ok(ErrStmt) instead of Err(ParserError) at some stages : expression_statement and print_statement
+// Having a From<ParserError> for ErrStmt would help
+impl From<ParserError> for Stmt {
+    fn from(perr: ParserError) -> Self {
+        Stmt::ErrStmt {
+            message: format!("{perr}"),
+        }
+    }
+}
+
+impl From<ParserError> for Declaration {
+    fn from(_perr: ParserError) -> Self {
+        Self::ErrDecl
+    }
 }

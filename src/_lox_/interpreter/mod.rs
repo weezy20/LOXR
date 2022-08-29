@@ -18,6 +18,7 @@ impl Interpreter {
     }
     pub fn interpret(&mut self) {
         for stmt in self.0.iter() {
+            // Todo: declutter this code
             let val = match match stmt {
                 DStmt(s) => match s {
                     Stmt::ExprStmt(e) | Stmt::Print(e) => e.eval(),
@@ -33,6 +34,10 @@ impl Interpreter {
                 },
                 VarDecl { name, initializer } => {
                     println!("var {name} declared to {initializer:?}");
+                    Ok(Value::Nil)
+                }
+                Declaration::ErrDecl => {
+                    eprintln!("ErrDecl");
                     Ok(Value::Nil)
                 }
             } {

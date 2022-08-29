@@ -55,6 +55,7 @@ use crate::parser::expressions::*;
 use crate::tokenizer::token::Token;
 use crate::tokenizer::token_type::TokenType::{self, *};
 use better_peekable::{BPeekable, BetterPeekable};
+use colored::Colorize;
 use expressions::Expression;
 use std::vec::IntoIter;
 
@@ -139,7 +140,7 @@ impl Parser {
             Err(e) if self.error_production.len() > 0 => {
                 let mut _had_error = false;
                  {
-                    eprintln!("Error productions in Parser cache : {:?}", self.error_production);
+                    eprintln!("Error productions in Parser cache : {:#?}", self.error_production);
                     _had_error = true;
                     // println!("Discarding Malformed expression:\n{expr:?}");
                     // let _ = Expression::Error(expr); // 
@@ -409,7 +410,7 @@ impl Parser {
         }
     }
 }
-// Statements
+// Statement parsing
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
         Self {
@@ -435,71 +436,70 @@ impl Parser {
     /// Parse as a variable declaration or else a statment
     fn declaration(&mut self) -> Declaration {
         // When panic, call self.synchronize()
+        // Declarations can be either a VarDecl or a normal Statement, 
+        // we decide that here: 
         if self.matches(vec![VAR]) {
-            self.var_declaration()
+            match self.var_declaration() {
+                Ok(d) => d,
+                Err(err) => { 
+                    eprintln!("{}", err);
+                    err.into()
+                },
+            }
         } else {
             self.statement().into()
         }
     }
-    fn var_declaration(&mut self) -> Declaration {
+    fn var_declaration(&mut self) -> Result<Declaration, ParserError> {
         if self.matches(vec![IDENTIFIER])  {
-            let name_token = self.previous.take().expect("matches infallible");
+            let name_token = self.previous.take().expect("matches is infallible");
             let name = name_token.lexeme;
+            // Variable decl and init
             if self.matches(vec![EQUAL]) {
-                let initializer = self.expression().ok();
-                self.consume(SEMICOLON).expect("Handle missing semicolon");
-                if initializer.is_none() {
-                    let equal = self.previous.take().unwrap();
-                    Lox::report_syntax_err(equal.ln, equal.col, "Cannot parse variable declaration expression, recovering...".into());
-                    // We had an error that was discarded
-                    self.synchronize();
-                }
-                return Declaration::VarDecl { initializer, name };
-            } else {
-                // Variable declaration without initialization
-                self.consume(SEMICOLON).expect("Handle missing semicolon");
-                return Declaration::VarDecl { name, initializer: None };
+                let initializer = self.expression()?;
+                self.consume(SEMICOLON)?;
+                let _equal = self.previous.take().expect("Safe to unwrap here");                
+                Ok(Declaration::VarDecl { name, initializer: Some(initializer) })
+            } 
+            // Variable declaration without initialization
+            else {
+                self.consume(SEMICOLON)?;
+                Ok(Declaration::VarDecl { name, initializer: None })
             }
         }   
         else {
-            panic!("invalid variable declaration");
+           Err(ParserError::IllegalStmt(Some("Missing variable identifer".into())))
         }
-        unimplemented!()
     }
-    /// Parse as a statement
+    /// Parse as a statement, converting ParserErrors into ErrStmt enclosing the ParserError
     fn statement(&mut self) -> Stmt {
         if self.matches(vec![COMMENT]) {
             if self.is_at_end() {
                 return Stmt::Empty;
             }
         }
-        if self.matches(vec![PRINT]) {
+        let stmt = if self.matches(vec![PRINT]) {
             self.print_statement()
         } else {
             self.expression_statement()
-        }
-    }
-    fn print_statement(&mut self) -> Stmt {
-        let val = self.parse_expression().expect("DANGER Unwrap for now");
-        let _t = self.consume(SEMICOLON).expect("DANGER UNWRAP : ParserErr, expected semicolon").expect("Token always present, infallible");
-        Stmt::Print(val)
-    }
-    fn expression_statement(&mut self) -> Stmt {
-        
-        let val = match self.parse_expression() {
-            Ok(expression) => expression,
-            Err(err) => { return Stmt::ErrStmt { message : format!("{err}")}},
         };
-        // TODO: Errors on EOF not preceded by semicolon
-        match self.consume(SEMICOLON) {
-            Ok(t) => {},
-            Err(ParserError::UnexpectedEOF) => { return Stmt::ErrStmt { message: "Expected semicolon".into() } },
-            Err(e) =>{                
-                todo!("handle this for expression //{{comment}} ");
-                eprintln!("{e}");
-            }
+        match stmt {
+            Ok(s) => s,
+            Err(err) => err.into(),
         }
-
-        Stmt::ExprStmt(val)
+    }
+    // We are not making use of Err(ParserError) yet, and just return Ok(ErrStmt) instead
+    fn print_statement(&mut self) -> Result<Stmt, ParserError> {
+        let val = self.parse_expression()?;
+        self.consume(SEMICOLON)?;
+        self.consume(SEMICOLON)?;
+        Ok(Stmt::Print(val))
+    }
+    // We are not making use of Err(ParserError) yet, and just return Ok(ErrStmt) instead
+    fn expression_statement(&mut self) -> Result<Stmt, ParserError> {     
+        let val = self.parse_expression()?;
+        // TODO: Errors on EOF not preceded by semicolon, should we error?
+        self.consume(SEMICOLON)?;
+        Ok(Stmt::ExprStmt(val))
     }
 }

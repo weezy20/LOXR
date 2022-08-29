@@ -19,14 +19,19 @@ pub enum ParserError {
     MissingOperand,
     #[error("Expected Expression")]
     UnexpectedExpression,
-    #[error("Expected one of }}, ; but found EOF")]
+    #[error("Expected one of ['{}', '{}'] but found EOF", "}".yellow(), ";".yellow())]
     UnexpectedEOF,
     #[error("Error production")]
     ErrorProduction(Box<Expression>),
     /// Represents an irrecoverable error during statement parsing
-    #[error("Illegal Statement")]
-    IllegalStmt,
+    #[error("Illegal Statement{}", if let Some(err) = _0 {
+        format!(": {err}")
+    } else {
+        "".into()
+    })]
+    IllegalStmt(Option<String>),
 }
+
 
 #[derive(Error, Debug, PartialEq)]
 pub enum EvalError {
