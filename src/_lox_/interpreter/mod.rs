@@ -33,7 +33,14 @@ impl Interpreter {
                     Stmt::Empty => Ok(Value::Nil),
                 },
                 VarDecl { name, initializer } => {
-                    println!("var {name} declared to {initializer:?}");
+                    println!(
+                        "var {name} declared to {}",
+                        if let Some(expr) = initializer {
+                            expr.eval().expect("Unsafe unwrap of ValueResult")
+                        } else {
+                            Value::Nil
+                        }
+                    );
                     Ok(Value::Nil)
                 }
                 Declaration::ErrDecl => {
