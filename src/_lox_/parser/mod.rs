@@ -431,7 +431,7 @@ impl Parser {
         while !self.is_at_end() {
             stmts.push(self.declaration());
             // BUG_FIXED: If var ? or an ErrDecl is returned, this loop never ends
-            // BUG: Doesn't synchronize on multiline comments
+            // BUG_FIXED: Doesn't synchronize on multiline comments
             loc!(format!("Number of statements : {}", stmts.len()));
         }
         stmts
@@ -481,14 +481,15 @@ impl Parser {
     }
     /// Parse as a statement, converting ParserErrors into ErrStmt enclosing the ParserError
     fn statement(&mut self) -> Stmt {
-        if self.matches(vec![COMMENT]) {
+        if self.matches(vec![COMMENT, MULTI_LINE_COMMENT]) {
             if self.is_at_end() {
                 return Stmt::Empty;
             }
         }
         let stmt = if self.matches(vec![PRINT]) {
             self.print_statement()
-        } else {
+        } 
+        else {
             self.expression_statement()
         };
         match stmt {
