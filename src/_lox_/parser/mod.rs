@@ -430,6 +430,8 @@ impl Parser {
         let mut stmts = vec![];
         while !self.is_at_end() {
             stmts.push(self.declaration());
+            // BUG_FIXED: If var ? or an ErrDecl is returned, this loop never ends
+            loc!(format!("Number of statements : {}", stmts.len()));
         }
         stmts
     }
@@ -443,9 +445,11 @@ impl Parser {
             match self.var_declaration() {
                 Ok(d) => d,
                 Err(err) => { 
-                    loc!();
+                    loc!("Declaration parsing error");
                     eprintln!("{}", err);
-                    err.into()
+                    let d = err.into(); // to leverage type inference for the following macro
+                    loc!(d);
+                    d // due to this rust can infer the type and use it in the above macro
                 },
             }
         } else {
@@ -470,6 +474,7 @@ impl Parser {
             }
         }   
         else {
+           self.synchronize();
            Err(ParserError::IllegalStmt(Some("Missing variable identifer".into())))
         }
     }

@@ -25,7 +25,7 @@ pub enum ParserError {
     ErrorProduction(Box<Expression>),
     /// Represents an irrecoverable error during statement parsing
     #[error("Illegal Statement{}", if let Some(err) = _0 {
-        format!(": {err}")
+        format!(": {err}").bright_red()
     } else {
         "".into()
     })]
