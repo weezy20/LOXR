@@ -1,10 +1,14 @@
+use crate::loc;
 use crate::parser::{
     statement::{
         Declaration,
         Declaration::{DStmt, VarDecl},
         Stmt,
     },
-    traits::{evaluate::Evaluate, printer::ExpressionPrinter},
+    traits::{
+        evaluate::{Evaluate, ValueResult},
+        printer::ExpressionPrinter,
+    },
     value::Value,
     Parser,
 };
@@ -16,13 +20,13 @@ impl Interpreter {
     pub fn new(mut p: Parser) -> Self {
         Self(p.parse())
     }
-    pub fn interpret(&mut self) {
+    pub fn interpret(&mut self) -> () {
         for stmt in self.0.iter() {
-            // Todo: declutter this code
-            let val = match match stmt {
+            let val: ValueResult = match stmt {
                 DStmt(s) => match s {
                     Stmt::ExprStmt(e) | Stmt::Print(e) => e.eval(),
                     Stmt::ErrStmt { message } => {
+                        loc!();
                         eprintln!(
                             "{}{}{message}",
                             "Interpreter Error: ".red(),
@@ -44,17 +48,25 @@ impl Interpreter {
                     Ok(Value::Nil)
                 }
                 Declaration::ErrDecl => {
-                    eprintln!("ErrDecl");
+                    loc!();
+                    eprintln!(
+                        "{}{}",
+                        "Interpreter Error: ".red(),
+                        "Variable declaration error".yellow()
+                    );
                     Ok(Value::Nil)
                 }
-            } {
-                Ok(val) => val,
+            };
+            match val {
+                Ok(val) => {
+                    println!(">> {}", val);
+                }
                 Err(e) => {
-                    eprintln!("{} {e}", "Interpreter error:".red());
+                    loc!();
+                    eprintln!("{} {e}", "Interpreter Error:".red());
                     continue;
                 }
             };
-            println!("computed -> {}", val);
         }
     }
 }

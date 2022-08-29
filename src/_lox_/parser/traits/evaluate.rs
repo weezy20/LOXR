@@ -5,7 +5,7 @@ use crate::parser::expressions::*;
 use crate::parser::value::Value;
 use crate::tokenizer::token_type::TokenType::*;
 
-type ValueResult = Result<Value, EvalError>;
+pub type ValueResult = Result<Value, EvalError>;
 
 pub trait Evaluate {
     fn eval(&self) -> ValueResult;

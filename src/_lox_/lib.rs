@@ -13,6 +13,9 @@ pub mod parser;
 /// ## Interpreter 
 pub mod interpreter;
 
+/// ## Macros
+pub mod macros;
+
 // use std::borrow::{Cow, Borrow};
 
 use crate::parser::traits::evaluate::Evaluate;

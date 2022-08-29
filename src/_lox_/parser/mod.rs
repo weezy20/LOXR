@@ -54,11 +54,11 @@
 use crate::parser::expressions::*;
 use crate::tokenizer::token::Token;
 use crate::tokenizer::token_type::TokenType::{self, *};
+use crate::loc;
 use better_peekable::{BPeekable, BetterPeekable};
 use colored::Colorize;
 use expressions::Expression;
 use std::vec::IntoIter;
-
 use self::error::ParserError;
 use self::statement::{Stmt, Declaration};
 
@@ -140,6 +140,7 @@ impl Parser {
             Err(e) if self.error_production.len() > 0 => {
                 let mut _had_error = false;
                  {
+                    loc!();
                     eprintln!("Error productions in Parser cache : {:#?}", self.error_production);
                     _had_error = true;
                     // println!("Discarding Malformed expression:\n{expr:?}");
@@ -442,6 +443,7 @@ impl Parser {
             match self.var_declaration() {
                 Ok(d) => d,
                 Err(err) => { 
+                    loc!();
                     eprintln!("{}", err);
                     err.into()
                 },

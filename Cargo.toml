@@ -9,13 +9,17 @@ version = "0.1.1"
 name = "_lox_"
 path = "src/_lox_/lib.rs"
 
+
 [[bin]]
 name = "loxr"
 path = "src/main.rs"
 
+[features]
+# enable debug print statements
+debug = []
+
 [dependencies]
 better_peekable = "0.2.4"
-# clap = { version = "3.2.8", features = ["derive"] }
 colored = "2.0.0"
 derive_more = "0.99.17"
 lazy_static = "1.4.0"
