@@ -36,7 +36,7 @@ impl Interpreter {
                     }
                     Stmt::Empty => Ok(Value::Nil),
                 },
-                VarDecl { name, initializer } => {
+                Declaration::VarDecl { name, initializer } => {
                     println!(
                         "var {name} declared to {}",
                         if let Some(expr) = initializer {

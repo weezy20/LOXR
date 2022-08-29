@@ -6,7 +6,7 @@ macro_rules! loc {
     ($($msg:expr)*) => {
         #[cfg(feature = "debug")]
         {
-            $(eprintln!("{}{}", "DEBUG#> ".bright_red(), $msg);)*
+            $(eprintln!("{}\"{}\"", "DEBUG#> ".bright_red(), $msg);)*
             eprintln!("(File : {} Line : {})", file!().bright_yellow(), (line!() + 1).to_string().green());
         }
     };

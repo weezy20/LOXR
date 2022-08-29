@@ -23,15 +23,17 @@ pub enum Stmt {
 /// that cannot accept a declaration can still accept a statement
 #[derive(Debug, Display, From)]
 pub enum Declaration {
+    #[display(fmt = "Statment '{}'", _0)]
     DStmt(Stmt),
     /// var go = "programming language by Google";
-    #[display(fmt = "VarDecl")]
+    #[display(fmt = "VarDecl IDENTIFER : '{}', Expression : {:?}", name, initializer)]
     VarDecl {
         name: String,
         initializer: Option<Box<Expression>>,
     },
-    // Represents an Error, should be evaluated to Nil 
-    ErrDecl 
+    /// Represents an Error, should be evaluated to Nil
+    #[display(fmt = "Error Declaration/Statement")]
+    ErrDecl,
 }
 
 // Since we are using Ok(ErrStmt) instead of Err(ParserError) at some stages : expression_statement and print_statement

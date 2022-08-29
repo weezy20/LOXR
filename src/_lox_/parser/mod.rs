@@ -209,6 +209,8 @@ impl Parser {
             Err(ParserError::InvalidToken(i)) => {
                 let (mut counter, threshold) = (1, 10);
                 had_binary_expr_err = true;
+                // TODO: This code results in assymetric error reporting
+                // for example `var x = 10-*;` produces a different error message than `var x = 10*-`
                 report_token_error(&i);
                 loop {
                     let maybe_valid = self.primary();
@@ -312,7 +314,7 @@ impl Parser {
 
 fn report_token_error(i: &Option<Token>) {
     if let Some(invalid_token) = i {
-        let message = format!("Invalid token: '{}' ,found at what appears to be the start of a Binary Expression", invalid_token.lexeme);
+        let message = format!("Invalid token: '{}' ,found at what appears to be the boundary of a Binary Expression", invalid_token.lexeme);
         Lox::report_syntax_err(invalid_token.ln, invalid_token.col, message);
     }
 }
@@ -432,6 +434,7 @@ impl Parser {
             stmts.push(self.declaration());
             // BUG_FIXED: If var ? or an ErrDecl is returned, this loop never ends
             // BUG_FIXED: Doesn't synchronize on multiline comments
+            // BUG : Infinte loop on char
             loc!(format!("Number of statements : {}", stmts.len()));
         }
         stmts
@@ -466,12 +469,12 @@ impl Parser {
                 let initializer = self.expression()?;
                 self.consume(SEMICOLON)?;
                 let _equal = self.previous.take().expect("Safe to unwrap here");                
-                Ok(Declaration::VarDecl { name, initializer: Some(initializer) })
+                Ok(Declaration::VarDecl{ name, initializer: Some(initializer) })
             } 
             // Variable declaration without initialization
             else {
                 self.consume(SEMICOLON)?;
-                Ok(Declaration::VarDecl { name, initializer: None })
+                Ok(Declaration::VarDecl{ name, initializer: None })
             }
         }   
         else {
@@ -494,7 +497,10 @@ impl Parser {
         };
         match stmt {
             Ok(s) => s,
-            Err(err) => err.into(),
+            Err(err) => {
+                self.synchronize();
+                err.into()
+            },
         }
     }
     // We are not making use of Err(ParserError) yet, and just return Ok(ErrStmt) instead
