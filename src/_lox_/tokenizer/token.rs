@@ -10,7 +10,7 @@ pub struct Token {
     /// whilst others maybe two or more characters
     pub lexeme: String,
     /// We include line number to track syntax error
-    pub line_number: usize,
+    pub ln: usize,
     /// Column where token starts
     pub col: usize,
 }
@@ -26,18 +26,18 @@ impl Token {
         Self {
             r#type,
             lexeme,
-            line_number,
+            ln: line_number,
             col,
         }
     }
     /// Returns a string representation of the current Token
     pub fn to_string(&self) -> String {
         let mut q = '"';
-        let mut line_beginning = self.line_number;
+        let mut line_beginning = self.ln;
         if self.r#type == TokenType::STRING {
             q = '"'; // Note that we already trim out the quotes from source string during scan_string
                      // Offset by new lines if a multi string is present
-            line_beginning = self.line_number - self.lexeme.matches('\n').count();
+            line_beginning = self.ln - self.lexeme.matches('\n').count();
         }
         if self.r#type == TokenType::EOF {
             return format!(

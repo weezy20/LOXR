@@ -22,9 +22,14 @@ impl Interpreter {
                 DStmt(s) => match s {
                     Stmt::ExprStmt(e) | Stmt::Print(e) => e.eval(),
                     Stmt::ErrStmt { message } => {
-                        eprintln!("InterpreterError: {message}");
+                        eprintln!(
+                            "{}{}{message}",
+                            "Interpreter Error: ".red(),
+                            "Bad statement ".yellow()
+                        );
                         Ok(Value::Nil)
-                    },
+                    }
+                    Stmt::Empty => Ok(Value::Nil),
                 },
                 VarDecl { name, initializer } => {
                     println!("var {name} declared to {initializer:?}");

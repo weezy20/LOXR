@@ -2,6 +2,7 @@ use crate::parser::expressions::Expression;
 use crate::tokenizer::token::Token;
 use thiserror::Error;
 use colored::Colorize;
+
 #[allow(unused)]
 #[derive(Error, Debug, PartialEq)]
 pub enum ParserError {
@@ -22,6 +23,9 @@ pub enum ParserError {
     UnexpectedEOF,
     #[error("Error production")]
     ErrorProduction(Box<Expression>),
+    /// Represents an irrecoverable error during statement parsing
+    #[error("Illegal Statement")]
+    IllegalStmt,
 }
 
 #[derive(Error, Debug, PartialEq)]

@@ -1,3 +1,55 @@
+//! Parser grammar:
+//! program          → `declaration`* EOF;
+//! 
+//! declaration      → `variableDecl` | statement;
+//! 
+//! We may declare a variable or declare and assign the result of some expression to it
+//! variableDecl     → "var" IDENTIFIER ("=" expression)? ";" ;
+//! 
+//! statement        → `exprStmt` | printStmt ;
+//! exprStmt         → `expression` ";" ;
+//! printStmt        → print `expression` ";" ;
+//! 
+//! A comma expression evaluates to the final expression
+//! *comma expr*     → `expression , (expression)* | "(" expression ")"`;
+//!
+//! *ternary*        → `expression` ? `expression` : `expression`;
+//!
+//! *expression*     → `literal
+//!                  | unary
+//!                  | binary
+//!                  | grouping ;`
+//!
+//! *literal*        → `NUMBER | STRING | "true" | "false" | "nil" ;`
+//!
+//! *grouping*       → `"(" expression ")" ;`
+//!
+//! *unary*          → `( "-" | "!" ) expression ;`
+//!
+//! *binary*         → `expression operator expression ;`
+//!
+//! *operator*       → `"==" | "!=" | "<" | "<=" | ">" | ">="
+//!                  | "+"  | "-"  | "*" | "/" | "%";`
+//!
+//! Furthermore if we bake in the precedence rules it looks like this,
+//! where top to bottom indicates the level of precedence of a given rule, top being matched the least
+//! and bottom being matched the first:
+//!
+//! *expression*  → `ternary`
+//! 
+//! *ternary*     → `equality` | `equality` ? : `equality`;
+//!
+//! *equality*    → `comparsion ("==" | "!=" comparison)*;`
+//!
+//! *comparison*  → `term ("<="|"<"|">"|">=" term)*;`
+//!
+//! *term*        → `factor ("+"|"-" factor)*;`
+//!
+//! *factor*      → `unary (( "%" | "/" | "*" ) unary )*;`
+//!
+//! *unary*       → `("-" | "!") unary | primary;`
+//!
+//! *primary*     → `literal | identifier | "(" expression ")";`
 
 use crate::parser::expressions::*;
 use crate::tokenizer::token::Token;
@@ -23,59 +75,6 @@ pub mod expressions;
 pub mod statement;
 
 
-/// Parser grammar:
-/// program          → `declaration`* EOF;
-/// 
-/// declaration      → `variableDecl` | statement;
-/// 
-/// We may declare a variable or declare and assign the result of some expression to it
-/// variableDecl     → "var" IDENTIFIER ("=" expression)? ";" ;
-/// 
-/// statement        → `exprStmt` | printStmt ;
-/// exprStmt         → `expression` ";" ;
-/// printStmt        → print `expression` ";" ;
-/// 
-/// A comma expression evaluates to the final expression
-/// *comma expr*     → `expression , (expression)* | "(" expression ")"`;
-///
-/// *ternary*        → `expression` ? `expression` : `expression`;
-///
-/// *expression*     → `literal
-///                  | unary
-///                  | binary
-///                  | grouping ;`
-///
-/// *literal*        → `NUMBER | STRING | "true" | "false" | "nil" ;`
-///
-/// *grouping*       → `"(" expression ")" ;`
-///
-/// *unary*          → `( "-" | "!" ) expression ;`
-///
-/// *binary*         → `expression operator expression ;`
-///
-/// *operator*       → `"==" | "!=" | "<" | "<=" | ">" | ">="
-///                  | "+"  | "-"  | "*" | "/" | "%";`
-///
-/// Furthermore if we bake in the precedence rules it looks like this,
-/// where top to bottom indicates the level of precedence of a given rule, top being matched the least
-/// and bottom being matched the first:
-///
-/// *expression*  → `ternary`
-/// 
-/// *ternary*     → `equality` | `equality` ? : `equality`;
-///
-/// *equality*    → `comparsion ("==" | "!=" comparison)*;`
-///
-/// *comparison*  → `term ("<="|"<"|">"|">=" term)*;`
-///
-/// *term*        → `factor ("+"|"-" factor)*;`
-///
-/// *factor*      → `unary (( "%" | "/" | "*" ) unary )*;`
-///
-/// *unary*       → `("-" | "!") unary | primary;`
-///
-/// *primary*     → `literal | identifier | "(" expression ")";`
-
 #[derive(Debug, Clone)]
 // TODO : Add a (line, col) for syntax error reporting
 pub struct Parser {
@@ -87,6 +86,7 @@ pub struct Parser {
 }
 /// In a recursive descent parser, the least priority rule is matched first
 /// as we descend down into nested grammer rules
+// Expression
 impl Parser {
     pub fn parse_expression(&mut self) -> Result<Box<Expression>, ParserError> {
         self.comma_expression()
@@ -123,7 +123,7 @@ impl Parser {
                 })));
             } 
             let prev = self.previous.clone().expect("Matches will ensure something here");
-            Lox::report_syntax_err(prev.line_number, prev.col, "Invalid Ternary expression".into());
+            Lox::report_syntax_err(prev.ln, prev.col, "Invalid Ternary expression".into());
             return Err(ParserError::UnexpectedExpression);
         
         }
@@ -263,7 +263,7 @@ impl Parser {
                 match peeked_token.r#type {
                     LEFT_PAREN | LEFT_BRACE | LEFT_SQUARE => {
                         Lox::report_syntax_err(
-                            peeked_token.line_number, 
+                            peeked_token.ln, 
                             peeked_token.col, 
                             format!("Unexpected token {peeked_token} after {_p}")
                         );
@@ -311,9 +311,10 @@ impl Parser {
 fn report_token_error(i: &Option<Token>) {
     if let Some(invalid_token) = i {
         let message = format!("Invalid token: '{}' ,found at what appears to be the start of a Binary Expression", invalid_token.lexeme);
-        Lox::report_syntax_err(invalid_token.line_number, invalid_token.col, message);
+        Lox::report_syntax_err(invalid_token.ln, invalid_token.col, message);
     }
 }
+// Private helpers
 impl Parser {
     /// Peeks the current token iterator for a match in the list of searchable token types passed to it.
     /// Advances the underlying iterator only on a match, i.e. increments the `current` field and consumes 
@@ -362,7 +363,7 @@ impl Parser {
             return Ok(self.advance());
         }
         else if let Some(peeked_token) = self.tokens.peek() && peeked_token.r#type != EOF { 
-            Lox::report_syntax_err(peeked_token.line_number, peeked_token.col, format!("Invalid Token> {peeked_token:#?} encountered\nExpected {expected_token:#?}") );
+            Lox::report_syntax_err(peeked_token.ln, peeked_token.col, format!("Invalid Token> {peeked_token:#?} encountered\nExpected {expected_token:#?}") );
             Err(ParserError::InvalidToken(self.tokens.peek().cloned()))
         } 
         // None is peeked that means we are at EOF
@@ -377,7 +378,7 @@ impl Parser {
             // We should enter this condition
             if let Some(peeked_token) = self.tokens.peek() && peeked_token.r#type == EOF {
                 // This should report EOF in the error msg
-                Lox::report_syntax_err(peeked_token.line_number, peeked_token.col, format!("Unexpected end of file, found {:#?}, expected `{expected_token:?}`", peeked_token.r#type));
+                Lox::report_syntax_err(peeked_token.ln, peeked_token.col, format!("Unexpected end of file, found {:#?}, expected `{expected_token:?}`", peeked_token.r#type));
                 return Err(ParserError::UnexpectedEOF);
             }
             Err(ParserError::UnexpectedExpression)
@@ -408,7 +409,7 @@ impl Parser {
         }
     }
 }
-
+// Statements
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
         Self {
@@ -424,11 +425,11 @@ impl Parser {
         self.parse_expression()
     }
     pub fn parse(&mut self) -> Vec<Declaration> {
-        let mut decl_stmts = vec![];
+        let mut stmts = vec![];
         while !self.is_at_end() {
-            decl_stmts.push(self.declaration());
+            stmts.push(self.declaration());
         }
-        decl_stmts
+        stmts
     }
     // TODO: Transform all statement methods to return a Result
     /// Parse as a variable declaration or else a statment
@@ -449,7 +450,7 @@ impl Parser {
                 self.consume(SEMICOLON).expect("Handle missing semicolon");
                 if initializer.is_none() {
                     let equal = self.previous.take().unwrap();
-                    Lox::report_syntax_err(equal.line_number, equal.col, "Cannot parse variable declaration expression, recovering...".into());
+                    Lox::report_syntax_err(equal.ln, equal.col, "Cannot parse variable declaration expression, recovering...".into());
                     // We had an error that was discarded
                     self.synchronize();
                 }
@@ -461,12 +462,17 @@ impl Parser {
             }
         }   
         else {
-            panic!("invalid variable deeclaration");
+            panic!("invalid variable declaration");
         }
         unimplemented!()
     }
     /// Parse as a statement
     fn statement(&mut self) -> Stmt {
+        if self.matches(vec![COMMENT]) {
+            if self.is_at_end() {
+                return Stmt::Empty;
+            }
+        }
         if self.matches(vec![PRINT]) {
             self.print_statement()
         } else {
@@ -487,8 +493,7 @@ impl Parser {
         // TODO: Errors on EOF not preceded by semicolon
         match self.consume(SEMICOLON) {
             Ok(t) => {},
-            Err(ParserError::UnexpectedEOF) => {
-            },
+            Err(ParserError::UnexpectedEOF) => { return Stmt::ErrStmt { message: "Expected semicolon".into() } },
             Err(e) =>{                
                 todo!("handle this for expression //{{comment}} ");
                 eprintln!("{e}");
