@@ -1,6 +1,3 @@
-#![allow(unused)]
-use std::io::Write;
-
 use super::token_type::TokenType;
 
 #[derive(Debug, Clone, Default, PartialEq)]

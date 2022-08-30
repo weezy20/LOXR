@@ -20,7 +20,7 @@ impl Evaluate for Expression {
                     if idx != expr_list.len() - 1 {
                         // eval and discard
                         match item.eval() {
-                            Ok(x) => { /*println!("Evaluating {item:?} got -> {x:?}")*/ },
+                            Ok(_x) => { /*println!("Evaluating {item:?} got -> {x:?}")*/ }
                             Err(e) => println!("Evaluating {item:?} got error -> {e:?}"),
                         }
                     }
@@ -40,7 +40,7 @@ impl Evaluate for Expression {
             Expression::Lit(literal) => literal.eval(),
             Expression::Group(group) => group.eval(),
             // For now let's throw an error on error production evaluations
-            Expression::Error(err) => Err(EvalError::ErrorProduction),
+            Expression::Error(_err) => Err(EvalError::ErrorProduction),
         }
     }
 }
@@ -148,7 +148,7 @@ impl Evaluate for BinaryExpr {
                         }
                     }
                     (None, Some(rstr)) => {
-                        let mut r = rstr.into_owned();
+                        let r = rstr.into_owned();
                         if let Some(n) = left.is_numeric() {
                             let mut x = n.to_string();
                             x.push_str(&r);
@@ -218,7 +218,7 @@ impl Evaluate for BinaryExpr {
 impl Evaluate for UnaryExpr {
     fn eval(&self) -> ValueResult {
         let right = self.operand.eval()?;
-        let mut result = match self.operator.r#type {
+        let result = match self.operator.r#type {
             BANG => Value::Bool(!right.is_truthy()),
             MINUS => match right {
                 Value::Double(rval) => Value::Double(-rval),

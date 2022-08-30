@@ -56,7 +56,6 @@ use crate::tokenizer::token::Token;
 use crate::tokenizer::token_type::TokenType::{self, *};
 use crate::loc;
 use better_peekable::{BPeekable, BetterPeekable};
-use colored::Colorize;
 use expressions::Expression;
 use std::vec::IntoIter;
 use self::error::ParserError;
@@ -137,7 +136,7 @@ impl Parser {
         
         let mut expr: Box<Expression> = match self.comparison() {
             Ok(expr) => expr,
-            Err(e) if self.error_production.len() > 0 => {
+            Err(_e) if self.error_production.len() > 0 => {
                 let mut _had_error = false;
                  {
                     loc!();

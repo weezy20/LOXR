@@ -1,4 +1,4 @@
-use std::fmt::{write, Display};
+use std::fmt::Display;
 
 use crate::tokenizer::token::Token;
 use crate::tokenizer::token_type::TokenType;
@@ -38,7 +38,7 @@ impl Display for Expression {
                 let mut res = res.trim_end_matches("\n").to_owned();
                 res.push_str("\n]");
                 res
-            },
+            }
             Expression::TernExp(x) => format!("{x:?}"),
             Expression::Group(x) => format!("{x:?}"),
             Expression::Error(x) => format!("{x:?}"),

@@ -1,4 +1,3 @@
-#![allow(warnings, unused)]
 #![feature(let_chains)]
 #![feature(box_syntax)]
 //! This module contains all definitions for the Lox compiler and Lox interpreter
@@ -103,9 +102,9 @@ impl Lox {
         let mut scanner = Scanner::new(&src, self);
         scanner.scan_tokens();
         let tokens = scanner.tokens;
-        let mut parser = Parser::new(tokens);
+        let parser = Parser::new(tokens);
         {
-            let mut parser = parser.clone();
+            let parser = parser.clone();
             let mut interpreter = Interpreter::new(parser);
             interpreter.interpret();
             // Print statements

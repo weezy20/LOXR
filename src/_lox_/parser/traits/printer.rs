@@ -1,11 +1,8 @@
-#![allow(unused)]
 use super::super::expressions::*;
-use crate::tokenizer::{token::Token, token_type::TokenType};
-use std::fmt::Debug;
 
 macro_rules! start {
     ($id: tt) => {{
-        let mut s = format!(" {} ( ", $id);
+        let s = format!(" {} ( ", $id);
         s
     }};
 }
@@ -30,12 +27,8 @@ impl ExpressionPrinter for Expression {
             Expression::TernExp(e) => {
                 let mut result = format!("Ternary Expression\n");
                 result.push_str(&format!("Condition: {}", &e.condition.print()));
-                result
-                    .push_str(&format!("If Condtion true eval: {}", &e.if_true.print()));
-                result.push_str(&format!(
-                    "If Condtion false eval: {}",
-                    &e.if_false.print()
-                ));
+                result.push_str(&format!("If Condtion true eval: {}", &e.if_true.print()));
+                result.push_str(&format!("If Condtion false eval: {}", &e.if_false.print()));
                 result
             }
             Expression::Error(e) => {

@@ -2,12 +2,11 @@ use crate::loc;
 use crate::parser::{
     statement::{
         Declaration,
-        Declaration::{DStmt, VarDecl},
+        Declaration::{DStmt},
         Stmt,
     },
     traits::{
         evaluate::{Evaluate, ValueResult},
-        printer::ExpressionPrinter,
     },
     value::Value,
     Parser,
