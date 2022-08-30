@@ -1,3 +1,4 @@
+#![allow(unused, warnings)]
 use crate::{
     parser::{error::RuntimeError, value::Value},
     tokenizer::token::Token,
@@ -19,10 +20,16 @@ impl Environment {
         let name = token.lexeme.clone();
         match self.values.get(&name) {
             Some(val) => Ok(Some(val)),
-            None => Err(RuntimeError::UncaughtReference(
-                token,
-                format!("variable {name} is not defined"),
-            )),
+            None => {
+                // redundant as when inserting values we make sure to insert Value::Nil for var declarations
+                // if self.values.contains_key(&name) {
+                //     return Ok(None);
+                // }
+                Err(RuntimeError::UncaughtReference(
+                    token,
+                    format!("variable {name} is not defined"),
+                ))
+            }
         }
     }
 }
