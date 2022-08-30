@@ -6,7 +6,7 @@ use crate::parser::{
     Parser,
 };
 use colored::Colorize;
-
+mod environment;
 /// Since at this point our program is made of statements, this is perfectly fine
 pub struct Interpreter(Vec<Declaration>);
 impl Interpreter {
