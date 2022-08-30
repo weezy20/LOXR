@@ -37,8 +37,8 @@ pub enum ParserError {
 pub enum EvalError {
     #[error("Expression Evaluation error: {}", match self {
         EvalError::InvalidExpr(exp, custom_msg) if custom_msg.is_some() => { 
-          let msg = custom_msg.as_ref().unwrap();
-          format!("{msg}\nInvalid Expression: {exp}").red()
+            let msg = custom_msg.as_ref().unwrap();
+            format!("{msg}\nInvalid Expression: {exp}").red()
         },
         EvalError::InvalidExpr(exp, None) => { format!("Cannot evaluate: {:?}", exp).red() }
         _ => { "ICE : Uncaught exception".to_string().red() }
@@ -48,4 +48,10 @@ pub enum EvalError {
     ErrorProduction,
     #[error("Cannot divide by zero in: {0}")]
     DivideByZero(Expression)
+}
+
+#[derive(Error, Debug, PartialEq)]
+pub enum RuntimeError {
+    #[error("Uncaught reference: {} at {} ", _1, _0)]
+    UncaughtReference(Token, String)
 }

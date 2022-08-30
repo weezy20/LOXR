@@ -1,13 +1,7 @@
 use crate::loc;
 use crate::parser::{
-    statement::{
-        Declaration,
-        Declaration::{DStmt},
-        Stmt,
-    },
-    traits::{
-        evaluate::{Evaluate, ValueResult},
-    },
+    statement::{Declaration, Declaration::DStmt, Stmt},
+    traits::evaluate::{Evaluate, ValueResult},
     value::Value,
     Parser,
 };
