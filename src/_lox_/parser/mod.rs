@@ -508,7 +508,6 @@ impl Parser {
     fn print_statement(&mut self) -> Result<Stmt, ParserError> {
         let val = self.parse_expression()?;
         self.consume(SEMICOLON)?;
-        // self.consume(SEMICOLON)?;
         Ok(Stmt::Print(val))
     }
     // We are not making use of Err(ParserError) yet, and just return Ok(ErrStmt) instead

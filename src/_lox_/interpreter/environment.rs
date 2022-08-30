@@ -5,18 +5,19 @@ use crate::{
 };
 use std::collections::HashMap;
 
-struct Environment {
+#[derive(Default)]
+pub(in super) struct Environment {
     values: HashMap<String, Value>,
 }
 
 impl Environment {
-    fn define(&mut self, name: &str, value: Value) {
+    pub(in super) fn define(&mut self, name: &str, value: Value) {
         // If previous was something, the user just used var x = _ syntax to reassign to x instead of
         // x = _ syntax
         let _previous: Option<Value> = self.values.insert(name.to_owned(), value);
     }
     /// Getting a None represents that the value was declared but not initialized
-    fn get(&self, token: Token) -> Result<Option<&Value>, RuntimeError> {
+    pub(in super) fn get(&self, token: Token) -> Result<Option<&Value>, RuntimeError> {
         let name = token.lexeme.clone();
         match self.values.get(&name) {
             Some(val) => Ok(Some(val)),

@@ -7,14 +7,22 @@ use crate::parser::{
 };
 use colored::Colorize;
 mod environment;
+use environment::Environment;
 /// Since at this point our program is made of statements, this is perfectly fine
-pub struct Interpreter(Vec<Declaration>);
+#[derive(Default)]
+pub struct Interpreter {
+    stmts: Vec<Declaration>,
+    env: Environment,
+}
 impl Interpreter {
     pub fn new(mut p: Parser) -> Self {
-        Self(p.parse())
+        Self {
+            stmts: p.parse(),
+            ..Default::default()
+        }
     }
     pub fn interpret(&mut self) -> () {
-        for stmt in self.0.iter() {
+        for stmt in self.stmts.iter() {
             let val: ValueResult = match stmt {
                 DStmt(s) => match s {
                     Stmt::ExprStmt(e) | Stmt::Print(e) => e.eval(),
@@ -30,14 +38,13 @@ impl Interpreter {
                     Stmt::Empty => Ok(Value::Nil),
                 },
                 Declaration::VarDecl { name, initializer } => {
-                    println!(
-                        "var {name} declared to {}",
-                        if let Some(expr) = initializer {
-                            expr.eval().expect("Unsafe unwrap of ValueResult")
-                        } else {
-                            Value::Nil
-                        }
-                    );
+                    let val = if let Some(expr) = initializer {
+                        expr.eval().expect("Unsafe unwrap of ValueResult") // TODO: Deal with this unwrap
+                    } else {
+                        Value::Nil
+                    };
+                    println!("var {name} declared to {}", val);
+                    self.env.define(name, val);
                     Ok(Value::Nil)
                 }
                 Declaration::ErrDecl => {
