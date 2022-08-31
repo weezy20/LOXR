@@ -19,7 +19,7 @@ pub fn run_cli() {
         eprintln!("Usage \"loxr {{lox file}}\"");
     }
 }
-pub(in crate::cli) fn run_file(file: &str) {
+pub fn run_file(file: &str) {
     let mut lox = Lox::new(file.into());
     lox.run(None);
     if lox.had_runtime_error {
@@ -27,43 +27,19 @@ pub(in crate::cli) fn run_file(file: &str) {
     }
 }
 
-// mod repl {
-//     use super::*;
-//     use std::{io, io::Write};
-//     #[allow(unreachable_code)]
-//     pub(crate) fn start_repl() -> std::io::Result<()> {
-//         let mut lox_interpreter = Lox::new(Default::default());
-//         let mut buf = String::new();
-//         loop {
-//             print_prompt(&mut buf)?;
-//             let input = buf.trim();
-//             if input == "exit" || input == "quit" {
-//                 println!("Exiting Lox interpreter");
-//                 std::process::exit(0);
-//             }
-//             lox_interpreter.run(Some(String::from(input)));
-//             buf.clear();
-//         }
-//         Ok(())
-//     }
-
-//     #[inline(always)]
-//     fn print_prompt(buf: &mut String) -> io::Result<()> {
-//         // Edit this print argument to use your app's name
-//         print!("Lox > ");
-//         io::stdout().lock().flush()?;
-//         io::stdin().read_line(buf)?;
-//         Ok(())
-//     }
-// }
-
 mod repl {
     use super::*;
-    use _lox_::interpreter::Interpreter;
+    // use _lox_::interpreter::{Environment, Interpreter};
     use rustyline::{error::ReadlineError, Editor};
     #[allow(unreachable_code)]
     pub(crate) fn start_repl() -> std::io::Result<()> {
-        let mut lox_interpreter = Interpreter::new(Default::default());
+        let mut lox_interpreter = Lox::new(Default::default());
+        // let env = Environment::default();
+        // let mut interpreter = Interpreter {
+        //     env,
+        //     stmts: Default::default()
+        // };
+
         #[allow(unused_assignments)]
         let mut buf = String::new();
         let mut rl = Editor::<()>::new();
@@ -71,7 +47,6 @@ mod repl {
             // println!("No previous history.");
         }
         loop {
-            // print_prompt(&mut buf)?;
             let line = rl.readline("Lox > ");
             match line {
                 Ok(line) => {
@@ -89,7 +64,7 @@ mod repl {
                     break;
                 }
                 Err(e) => {
-                    eprintln!("Unexpected error : {e:?}");
+                    eprintln!("Unexpected prompt error : {e:?}");
                     std::process::exit(1);
                 }
             }

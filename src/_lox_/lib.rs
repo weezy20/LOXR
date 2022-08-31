@@ -9,15 +9,14 @@ pub mod tokenizer;
 /// ## Parser module that defines Lox syntactical grammar and constructs ASTs
 pub mod parser;
 
-/// ## Interpreter 
+/// ## Interpreter
 pub mod interpreter;
 
 /// ## Macros
 pub mod macros;
 
-// use std::borrow::{Cow, Borrow};
+// use std::rc::Rc;
 
-use crate::parser::traits::evaluate::Evaluate;
 use crate::parser::Parser;
 use crate::tokenizer::scanner::Scanner;
 use colored::Colorize;
@@ -30,12 +29,15 @@ pub struct Lox {
     pub had_runtime_error: bool,
     /// Source string
     pub src: String,
+    /// Repl interpreter
+    pub repl_interpreter: Interpreter,
 }
 
 impl Lox {
     /// Start a Lox instance for files
     pub fn new(src: String) -> Self {
         Self {
+            repl_interpreter: Interpreter::default(),
             had_error: false,
             had_runtime_error: false,
             src,
@@ -75,27 +77,14 @@ impl Lox {
             self.run_line(src);
         } else {
             // Run file
-            let src = self.src.clone(); // TODO: optimize this away
+            let src = self.src.clone();
             let mut scanner = Scanner::new(&src, self);
             scanner.scan_tokens();
             let tokens = scanner.tokens;
-            let mut parser = Parser::new(tokens);
+            let parser = Parser::new(tokens);
+            let interpreter = Interpreter::new(parser);
+            unimplemented!("files unimplemented");
             // TODO: run the interpreter, it doesn't run the interpreter now
-            // match parser.run() {
-            // Note: No longer works without &mut env
-            //     Ok(exp) => match exp.eval() {
-            //         // Ok(result) => println!("{result}"),
-            //         Ok(result) => {
-            //             println!("{exp}");
-            //             println!("{}", result);
-            //         }
-            //         Err(e) => eprintln!("{e}"),
-            //     }, /* println!("Successfully parsed: {std:#?}"), */
-            //     Err(e) => {
-            //         eprintln!("{e}");
-            //         self.had_runtime_error = true;
-            //     }
-            // }
         }
     }
     /// A REPL function. Interpret `src` as `lox` source and run it
@@ -104,34 +93,10 @@ impl Lox {
         scanner.scan_tokens();
         let tokens = scanner.tokens;
         let parser = Parser::new(tokens);
-        {
-            let parser = parser.clone();
-            let mut interpreter = Interpreter::new(parser);
-            interpreter.interpret();
-            // Print statements
-            // println!("Statements: ");
-            // for s in parser.parse() {
-            //     println!("-> {s}");
-            // }
-        }
-        // match parser.run() {
-        //     Ok(exp) => match exp.eval() {
-        //         // Ok(result) => println!("{result}"),
-        //         Ok(result) => {
-        //             println!("{exp}");
-        //             println!("{}", result);
-        //             // We don't care about runtime errors in REPL mode, yet interesting to note, once a user does
-        //             // enter faulty code, self.had_runtime_error stays on. 
-        //             // println!("had error {}", self.had_error);
-        //             // println!("had runtime error {}", self.had_runtime_error);
-        //         }
-        //         Err(e) => eprintln!("{e}"),
-        //     }, /* println!("Successfully parsed: {std:#?}"), */
-        //     Err(e) => {
-        //         eprintln!("{e}");
-        //         self.had_runtime_error = true;
-        //     }
-        // }
+        // let parser = parser.clone();
+        self.repl_interpreter.new_parser(parser);
+        // let mut interpreter = Interpreter::new_parser(interpreter, parser);
+        self.repl_interpreter.interpret();
         return;
     }
 }

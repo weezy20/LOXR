@@ -6,7 +6,7 @@ use crate::{
 };
 use std::collections::HashMap;
 
-#[derive(Default)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct Environment {
     pub values: HashMap<String, Value>,
 }

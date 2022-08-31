@@ -12,7 +12,7 @@ use colored::Colorize;
 mod environment;
 pub use environment::Environment;
 /// Since at this point our program is made of statements, this is perfectly fine
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Interpreter {
     stmts: Vec<Declaration>,
     // TODO: Can be made generic over environment
@@ -31,6 +31,11 @@ impl Interpreter {
             stmts: p.parse(),
             ..Default::default()
         }
+    }
+    /// Add a Stmt to a repl interpreter
+    pub fn new_parser(&mut self, mut p: Parser) {
+        self.stmts.append(&mut p.parse());
+        loc!(format!("Interpreter modified -> {self:?}"));
     }
     pub fn interpret(&mut self) -> () {
         for stmt in self.stmts.iter() {
@@ -72,7 +77,8 @@ impl Interpreter {
                 },
                 Declaration::VarDecl { name, initializer } => {
                     let val = if let Some(expr) = initializer {
-                        expr.eval(&mut self.env).expect("Unsafe unwrap of ValueResult") // TODO: Deal with this unwrap
+                        expr.eval(&mut self.env)
+                            .expect("Unsafe unwrap of ValueResult") // TODO: Deal with this unwrap
                     } else {
                         Value::Nil
                     };

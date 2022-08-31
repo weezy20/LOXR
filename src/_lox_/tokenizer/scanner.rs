@@ -36,7 +36,7 @@ use super::{token::Token, token_type::TokenType};
 // for refactoring here
 pub struct Scanner<'a: 'b, 'b> {
     /// Source string to tokenize
-    pub(crate) source: String,
+    pub(crate) source: &'a str,
     /// Iterator over source characters
     chars: BPeekable<CharIndices<'a>>,
     /// Offset from start of source
@@ -55,7 +55,7 @@ pub struct Scanner<'a: 'b, 'b> {
 #[allow(unused)]
 impl<'a, 'b> Scanner<'a, 'b> {
     /// Create a scanner that's ready to be used with scan_tokens
-    pub fn new(source: String, lox: &'b mut Lox) -> Self {
+    pub fn new(source: &'a str, lox: &'b mut Lox) -> Self {
         let char_indices = source.char_indices().better_peekable();
         Self {
             source,
