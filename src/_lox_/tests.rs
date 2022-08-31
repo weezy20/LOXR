@@ -259,11 +259,15 @@ mod parser_tests {
         println!("res2: {res2:#?}");
         assert!(res2.is_ok());
     }
-    #[ignore = "Assignment unimplemented in the parser"]
+    // #[ignore = "Assignment unimplemented in the parser"]
     #[test]
     fn assignment() {
+        let mut env = crate::interpreter::Environment::default();
         let tokens = setup_lox!("a=1+3+4(3+4)");
         let tokens = setup_lox!("a=-1+3+4(3+4)");
+        let res = Parser::new(tokens).run();
+        assert!(res.is_ok());
+        let tokens = setup_lox!("a=-1+3+4/(3+4)");
         let res = Parser::new(tokens).run();
         assert!(res.is_ok());
     }
