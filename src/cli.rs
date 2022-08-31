@@ -34,12 +34,6 @@ mod repl {
     #[allow(unreachable_code)]
     pub(crate) fn start_repl() -> std::io::Result<()> {
         let mut lox_interpreter = Lox::new(Default::default());
-        // let env = Environment::default();
-        // let mut interpreter = Interpreter {
-        //     env,
-        //     stmts: Default::default()
-        // };
-
         #[allow(unused_assignments)]
         let mut buf = String::new();
         let mut rl = Editor::<()>::new();

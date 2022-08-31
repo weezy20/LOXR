@@ -282,14 +282,15 @@ mod parser_evaluator {
     #[test]
     fn simple_eval()
     {
+        let mut env = crate::interpreter::Environment::default();
         // Arithmetic
         let tokens = setup_lox!("1+3+4*((3+4))"); 
-        let res = Parser::new(tokens).run().unwrap().eval();
+        let res = Parser::new(tokens).run().unwrap().eval(&mut env);
         assert!(res.is_ok());
         // println!("{:#?}", res);
         // Ternary expression
         let tokens = setup_lox!("4 == 5? 1 < 2 ? 1 : 2 : 3");
-        let res = Parser::new(tokens).run().unwrap().eval();
+        let res = Parser::new(tokens).run().unwrap().eval(&mut env);
         assert!(res.is_ok());
         println!("{:#?}", res);
     }
