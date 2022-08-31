@@ -150,7 +150,7 @@ mod parser_tests {
     fn illegal_termination() {
         let tokens = setup_lox!("1+3+4/");
         let res = Parser::new(tokens).run();
-        assert_eq!(res, Err(ParserError::UnexpectedExpression));
+        assert_eq!(res, Err(ParserError::ExpectedExpression));
     }
 
     #[test]

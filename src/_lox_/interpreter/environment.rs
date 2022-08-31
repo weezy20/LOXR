@@ -1,4 +1,5 @@
 #![allow(unused, warnings)]
+use super::Memory;
 use crate::{
     parser::{error::RuntimeError, value::Value},
     tokenizer::token::Token,
@@ -6,18 +7,19 @@ use crate::{
 use std::collections::HashMap;
 
 #[derive(Default)]
-pub(in super) struct Environment {
-    values: HashMap<String, Value>,
+pub struct Environment {
+    pub values: HashMap<String, Value>,
 }
 
-impl Environment {
-    pub(in super) fn define(&mut self, name: &str, value: Value) {
+impl Memory for Environment {
+    fn define(&mut self, name: &str, value: Value) {
         // If previous was something, the user just used var x = _ syntax to reassign to x instead of
         // x = _ syntax
         let _previous: Option<Value> = self.values.insert(name.to_owned(), value);
     }
     /// Getting a None represents that the value was declared but not initialized
-    pub(in super) fn get(&self, token: Token) -> Result<Option<&Value>, RuntimeError> {
+    fn get(&self, token: &Token) -> Result<Option<&Value>, RuntimeError> {
+        // crate::loc!(format!("{:?}", self.values));
         let name = token.lexeme.clone();
         match self.values.get(&name) {
             Some(val) => Ok(Some(val)),
@@ -27,10 +29,19 @@ impl Environment {
                 //     return Ok(None);
                 // }
                 Err(RuntimeError::UncaughtReference(
-                    token,
+                    token.clone(),
                     format!("variable {name} is not defined"),
                 ))
             }
+        }
+    }
+    fn put(&mut self, name: &str, value: Value) -> Result<(), RuntimeError> {
+        // put is not allowed to create new keys or variable definitions, it can only update existing ones
+        if !self.values.contains_key(name) {
+            Err(RuntimeError::UndefinedVar(name.to_owned()))
+        } else {
+            self.values.insert(name.to_owned(), value);
+            Ok(())
         }
     }
 }

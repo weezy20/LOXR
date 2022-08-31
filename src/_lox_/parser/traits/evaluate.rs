@@ -1,5 +1,7 @@
 use std::cmp::Ordering;
 
+use crate::interpreter::Memory;
+use crate::loc;
 use crate::parser::error::EvalError;
 use crate::parser::expressions::*;
 use crate::parser::value::Value;
@@ -7,26 +9,26 @@ use crate::tokenizer::token_type::TokenType::*;
 
 pub type ValueResult = Result<Value, EvalError>;
 
-pub trait Evaluate {
-    fn eval(&self) -> ValueResult;
+pub trait Evaluate<E: Memory> {
+    fn eval(&self, env: &mut E) -> ValueResult;
 }
 
-impl Evaluate for Expression {
-    fn eval(&self) -> ValueResult {
+impl<E: Memory> Evaluate<E> for Expression {
+    fn eval(&self, env: &mut E) -> ValueResult {
         match self {
             Expression::CommaExpr(expr_list) => {
                 // Comma expressions evaluate the list, discarding all results uptil the last one
                 expr_list.iter().enumerate().for_each(|(idx, item)| {
                     if idx != expr_list.len() - 1 {
                         // eval and discard
-                        match item.eval() {
+                        match item.eval(env) {
                             Ok(_x) => { /*println!("Evaluating {item:?} got -> {x:?}")*/ }
                             Err(e) => println!("Evaluating {item:?} got error -> {e:?}"),
                         }
                     }
                 });
                 if let Some(last) = expr_list.last() {
-                    last.eval()
+                    last.eval(env)
                 } else {
                     Err(EvalError::InvalidExpr(
                         self.clone(),
@@ -34,32 +36,74 @@ impl Evaluate for Expression {
                     ))
                 }
             }
-            Expression::TernExp(ternary) => ternary.eval(),
-            Expression::BinExp(bin_exp) => bin_exp.eval(),
-            Expression::UnExp(un_exp) => un_exp.eval(),
-            Expression::Lit(literal) => literal.eval(),
-            Expression::Group(group) => group.eval(),
+            Expression::TernExpr(ternary) => ternary.eval(env),
+            Expression::BinExpr(bin_exp) => bin_exp.eval(env),
+            Expression::UnExpr(un_exp) => un_exp.eval(env),
+            Expression::Lit(literal) => literal.eval(env),
+            Expression::Group(group) => group.eval(env),
+            // TODO: We need to interpret this separately in the Interpreter as
+            // Only the Interpreter has access to Environment, for now we don't add it to Evaluate trait definition
+            Expression::Assignment(assignment_expr) => assignment_expr.eval(env),
             // For now let's throw an error on error production evaluations
             Expression::Error(_err) => Err(EvalError::ErrorProduction),
+            // We include this because user may hit `a` and expect to see a value just like in python
+            Expression::Variable(t) => {
+                // We want the syntax tree to reflect that an l-value isn’t evaluated like a normal expression.
+                // TODO: What should a variable evaluate to?
+                match env.get(t) {
+                    Ok(v) => {
+                        if let Some(val) = v {
+                            // Declared and init
+                            Ok(val.to_owned())
+                        } else {
+                            // Declared but not init
+                            Ok(Value::Nil)
+                        }
+                    }
+                    // undefined
+                    Err(err) => {
+                        loc!(format!("Error on variable.eval() {err}"));
+                        Err(EvalError::VariableEval(err))
+                    }
+                }
+            }
         }
     }
 }
 
-impl Evaluate for TernaryExpr {
-    fn eval(&self) -> ValueResult {
-        // TernaryExpr { condition : Box<expr> , if_true : Box<expr>, if_false : Box<expr> }
-        let condition = self.condition.eval()?;
-        let condition = condition.is_truthy();
-        let result = [&self.if_false, &self.if_true][condition as usize];
-        result.eval()
+impl<E: Memory> Evaluate<E> for AssignmentExpr {
+    fn eval(&self, env: &mut E) -> ValueResult {
+        let (name, right) = (&self.name.lexeme, &self.right);
+        let rval = right.eval(env)?;
+        match env.put(name, rval.clone()) {
+            // print a = 2 should print "2"
+            Ok(()) => Ok(rval),
+            Err(_err) => {
+                loc!(format!("{_err}"));
+                Err(EvalError::InvalidExpr(
+                    (**right).clone(),
+                    Some("Cannot evaluate this right expression in assignment".into()),
+                ))
+            }
+        }
     }
 }
 
-impl Evaluate for BinaryExpr {
-    fn eval(&self) -> ValueResult {
-        let err_exp = Expression::BinExp(self.clone());
-        let left = self.left.eval()?;
-        let right = self.right.eval()?;
+impl<E: Memory> Evaluate<E> for TernaryExpr {
+    fn eval(&self, env: &mut E) -> ValueResult {
+        // TernaryExpr { condition : Box<expr> , if_true : Box<expr>, if_false : Box<expr> }
+        let condition = self.condition.eval(env)?;
+        let condition = condition.is_truthy();
+        let result = [&self.if_false, &self.if_true][condition as usize];
+        result.eval(env)
+    }
+}
+
+impl<E: Memory> Evaluate<E> for BinaryExpr {
+    fn eval(&self, env: &mut E) -> ValueResult {
+        let err_exp = Expression::BinExpr(self.clone());
+        let left = self.left.eval(env)?;
+        let right = self.right.eval(env)?;
         match self.operator.r#type {
             MINUS => {
                 if let Some((lval, rval)) = left.is_numeric().and_then(|lval| {
@@ -215,23 +259,23 @@ impl Evaluate for BinaryExpr {
     }
 }
 
-impl Evaluate for UnaryExpr {
-    fn eval(&self) -> ValueResult {
-        let right = self.operand.eval()?;
+impl<E: Memory> Evaluate<E> for UnaryExpr {
+    fn eval(&self, env: &mut E) -> ValueResult {
+        let right = self.operand.eval(env)?;
         let result = match self.operator.r#type {
             BANG => Value::Bool(!right.is_truthy()),
             MINUS => match right {
                 Value::Double(rval) => Value::Double(-rval),
                 _ => {
                     return Err(EvalError::InvalidExpr(
-                        Expression::UnExp(self.clone()),
+                        Expression::UnExpr(self.clone()),
                         None,
                     ))
                 }
             },
             _ => {
                 return Err(EvalError::InvalidExpr(
-                    Expression::UnExp(self.clone()),
+                    Expression::UnExpr(self.clone()),
                     Some("Cannot evaluate as unary expression".to_string()),
                 ))
             }
@@ -240,8 +284,8 @@ impl Evaluate for UnaryExpr {
     }
 }
 
-impl Evaluate for Literal {
-    fn eval(&self) -> ValueResult {
+impl<E: Memory> Evaluate<E> for Literal {
+    fn eval(&self, _env: &mut E) -> ValueResult {
         match self.inner.r#type {
             STRING => Ok(self.inner.lexeme.clone().into()),
             NUMBER => {
@@ -258,8 +302,8 @@ impl Evaluate for Literal {
     }
 }
 
-impl Evaluate for Grouping {
-    fn eval(&self) -> ValueResult {
-        self.inner.eval()
+impl<E: Memory> Evaluate<E> for Grouping {
+    fn eval(&self, env: &mut E) -> ValueResult {
+        self.inner.eval(env)
     }
 }

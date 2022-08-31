@@ -14,20 +14,23 @@ use crate::tokenizer::token_type::TokenType;
 #[derive(PartialEq, Debug, Clone)]
 pub enum Expression {
     CommaExpr(Vec<Box<Expression>>),
-    TernExp(TernaryExpr),
-    BinExp(BinaryExpr),
-    UnExp(UnaryExpr),
+    TernExpr(TernaryExpr),
+    BinExpr(BinaryExpr),
+    UnExpr(UnaryExpr),
     Lit(Literal),
     Group(Grouping),
     Error(Box<Expression>),
+    Assignment(AssignmentExpr),
+    // Should not be evaluated by the interpreter, only for parser usage
+    Variable(Token),
 }
 
 impl Display for Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Print display for variants which have the display method otherwise fallback to debug print
         let out = match &self {
-            Expression::BinExp(x) => format!("{x}"),
-            Expression::UnExp(x) => format!("{x}"),
+            Expression::BinExpr(x) => format!("{x}"),
+            Expression::UnExpr(x) => format!("{x}"),
             Expression::Lit(x) => format!("{x}"),
             Expression::CommaExpr(x) => {
                 let mut res = String::new();
@@ -39,12 +42,21 @@ impl Display for Expression {
                 res.push_str("\n]");
                 res
             }
-            Expression::TernExp(x) => format!("{x:?}"),
+            Expression::TernExpr(x) => format!("{x:?}"),
             Expression::Group(x) => format!("{x:?}"),
             Expression::Error(x) => format!("{x:?}"),
+            Expression::Assignment(AssignmentExpr { name, right }) => format!("{name} = {right}"),
+            Expression::Variable(t) => format!("{t}"),
         };
         write!(f, "{out}")
     }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct AssignmentExpr {
+    /// Type IDENTIFIER
+    pub name: Token,
+    pub right: Box<Expression>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -74,21 +86,25 @@ impl Display for BinaryExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let left = match &*self.left {
             Expression::CommaExpr(_) => "CommaExpr".into(),
-            Expression::TernExp(_) => "TernaryExpr".into(),
-            Expression::BinExp(_) => "BinExpr".into(),
-            Expression::UnExp(unary_expr) => format!("{unary_expr}"),
+            Expression::TernExpr(_) => "TernaryExpr".into(),
+            Expression::BinExpr(_) => "BinExpr".into(),
+            Expression::UnExpr(unary_expr) => format!("{unary_expr}"),
             Expression::Lit(lit) => lit.inner.lexeme.clone(),
             Expression::Group(_) => "Grouping".into(),
             Expression::Error(_) => "ErrorProduction".into(),
+            Expression::Assignment(AssignmentExpr { name, right }) => format!("{name} = {right}"),
+            Expression::Variable(t) => format!("{t}"),
         };
         let right = match &*self.right {
             Expression::CommaExpr(_) => "CommaExpr".into(),
-            Expression::TernExp(_) => "TernaryExpr".into(),
-            Expression::BinExp(_) => "BinExpr".into(),
-            Expression::UnExp(unary_expr) => format!("{unary_expr}"),
+            Expression::TernExpr(_) => "TernaryExpr".into(),
+            Expression::BinExpr(_) => "BinExpr".into(),
+            Expression::UnExpr(unary_expr) => format!("{unary_expr}"),
             Expression::Lit(lit) => format!("{lit}"),
             Expression::Group(_) => "Grouping".into(),
             Expression::Error(_) => "ErrorProduction".into(),
+            Expression::Assignment(AssignmentExpr { name, right }) => format!("{name} = {right}"),
+            Expression::Variable(t) => format!("{t}"),
         };
         write!(f, "{left} {op} {right}", op = self.operator.lexeme)
     }
@@ -103,12 +119,14 @@ impl Display for UnaryExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let operand = match &*self.operand {
             Expression::CommaExpr(_)
-            | Expression::TernExp(_)
+            | Expression::TernExpr(_)
             | Expression::Group(_)
             | Expression::Error(_)
-            | Expression::UnExp(_)
-            | Expression::BinExp(_) => "Expr".into(),
+            | Expression::UnExpr(_)
+            | Expression::BinExpr(_) => "Expr".into(),
             Expression::Lit(lit) => format!("{lit}"),
+            Expression::Assignment(AssignmentExpr { name, right }) => format!("{name} = {right}"),
+            Expression::Variable(t) => format!("{t}"),
         };
         write!(f, "{}{operand}", &self.operator.lexeme)
     }
@@ -184,7 +202,7 @@ mod test {
             Literal::new(Token::new(TokenType::NUMBER, "5".into(), line_number, col)).unwrap(),
         );
         let group45 = Expression::Group(Grouping {
-            inner: Box::new(Expression::BinExp(BinaryExpr {
+            inner: Box::new(Expression::BinExpr(BinaryExpr {
                 left: Box::new(four),
                 right: Box::new(five),
                 operator: Token::new(TokenType::SLASH, "/".into(), line_number, col),
@@ -192,14 +210,14 @@ mod test {
         });
 
         let group245 = Expression::Group(Grouping {
-            inner: Box::new(Expression::BinExp(BinaryExpr {
+            inner: Box::new(Expression::BinExpr(BinaryExpr {
                 left: Box::new(two),
                 right: Box::new(group45),
                 operator: Token::new(TokenType::MINUS, "-".into(), line_number, col),
             })),
         });
 
-        let r#final = Expression::BinExp(BinaryExpr {
+        let r#final = Expression::BinExpr(BinaryExpr {
             left: Box::new(one),
             right: Box::new(group245),
             operator: Token::new(TokenType::PLUS, "+".into(), line_number, col),

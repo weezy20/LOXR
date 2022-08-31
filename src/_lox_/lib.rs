@@ -80,21 +80,22 @@ impl Lox {
             scanner.scan_tokens();
             let tokens = scanner.tokens;
             let mut parser = Parser::new(tokens);
-            // TODO: run the interpreter
-            match parser.run() {
-                Ok(exp) => match exp.eval() {
-                    // Ok(result) => println!("{result}"),
-                    Ok(result) => {
-                        println!("{exp}");
-                        println!("{}", result);
-                    }
-                    Err(e) => eprintln!("{e}"),
-                }, /* println!("Successfully parsed: {std:#?}"), */
-                Err(e) => {
-                    eprintln!("{e}");
-                    self.had_runtime_error = true;
-                }
-            }
+            // TODO: run the interpreter, it doesn't run the interpreter now
+            // match parser.run() {
+            // Note: No longer works without &mut env
+            //     Ok(exp) => match exp.eval() {
+            //         // Ok(result) => println!("{result}"),
+            //         Ok(result) => {
+            //             println!("{exp}");
+            //             println!("{}", result);
+            //         }
+            //         Err(e) => eprintln!("{e}"),
+            //     }, /* println!("Successfully parsed: {std:#?}"), */
+            //     Err(e) => {
+            //         eprintln!("{e}");
+            //         self.had_runtime_error = true;
+            //     }
+            // }
         }
     }
     /// A REPL function. Interpret `src` as `lox` source and run it

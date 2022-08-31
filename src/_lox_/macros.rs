@@ -1,5 +1,3 @@
-#[allow(unused_imports)]
-use colored::Colorize;
 /// Debug feature must be enabled to use this
 /// Log the source file and line number where the error occured
 #[macro_export]
@@ -8,8 +6,9 @@ macro_rules! loc {
     ($($msg:expr)?) => {
         #[cfg(feature = "debug")]
         {
-            $(eprintln!("{}\"{}\"", "DEBUG#> ".bright_red(), $msg);)?
+            use colored::Colorize;
             eprintln!("(File : {} Line : {})", file!().bright_yellow(), (line!() + 1).to_string().green());
+            $(eprintln!("{}\"{}\"", "DEBUG#> ".bright_red(), $msg);)?
         }
     };
 }

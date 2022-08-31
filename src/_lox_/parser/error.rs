@@ -18,7 +18,7 @@ pub enum ParserError {
     // Most of the times InvalidToken can be more powerful than this error variant
     MissingOperand,
     #[error("Expected Expression")]
-    UnexpectedExpression,
+    ExpectedExpression,
     #[error("Expected one of ['{}', '{}'] but found EOF", "}".yellow(), ";".yellow())]
     UnexpectedEOF,
     #[error("Error production")]
@@ -30,6 +30,8 @@ pub enum ParserError {
         "".into()
     })]
     IllegalStmt(Option<String>),
+    #[error("Invalid assignment target")]
+    InvalidAssignmentTarget
 }
 
 
@@ -47,11 +49,15 @@ pub enum EvalError {
     #[error("Cannot evaluate Error production")]
     ErrorProduction,
     #[error("Cannot divide by zero in: {0}")]
-    DivideByZero(Expression)
+    DivideByZero(Expression),
+    #[error("Cannot evaluate variable : {0}")]
+    VariableEval(RuntimeError)
 }
 
 #[derive(Error, Debug, PartialEq)]
 pub enum RuntimeError {
     #[error("Uncaught reference: {} at {} ", _1, _0)]
-    UncaughtReference(Token, String)
+    UncaughtReference(Token, String),
+    #[error("Variable {} not declared before use ", _0)]
+    UndefinedVar(String)
 }

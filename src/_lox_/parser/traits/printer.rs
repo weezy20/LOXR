@@ -15,8 +15,8 @@ pub trait ExpressionPrinter {
 impl ExpressionPrinter for Expression {
     fn print(&self) -> String {
         match self {
-            Expression::BinExp(e) => e.print(),
-            Expression::UnExp(e) => e.print(),
+            Expression::BinExpr(e) => e.print(),
+            Expression::UnExpr(e) => e.print(),
             Expression::Lit(e) => e.print(),
             Expression::Group(e) => e.print(),
             Expression::CommaExpr(e) => e
@@ -24,7 +24,7 @@ impl ExpressionPrinter for Expression {
                 .map(|expr| expr.print())
                 .collect::<Vec<String>>()
                 .join(" --COMMA EXPR-- "),
-            Expression::TernExp(e) => {
+            Expression::TernExpr(e) => {
                 let mut result = format!("Ternary Expression\n");
                 result.push_str(&format!("Condition: {}", &e.condition.print()));
                 result.push_str(&format!("If Condtion true eval: {}", &e.if_true.print()));
@@ -34,6 +34,10 @@ impl ExpressionPrinter for Expression {
             Expression::Error(e) => {
                 format!("Printing Erroneous Expression: {}", e.print())
             }
+            Expression::Assignment(AssignmentExpr { name, right }) => {
+                format!("Assignment Expr {name} = {right}")
+            }
+            Expression::Variable(t) => format!("Variable {t}"),
         }
     }
 }

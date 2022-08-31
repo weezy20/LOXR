@@ -34,8 +34,15 @@
 //! Furthermore if we bake in the precedence rules it looks like this,
 //! where top to bottom indicates the level of precedence of a given rule, top being matched the least
 //! and bottom being matched the first:
+//! 
+//! Note on assignments, we would like to assign the result of a ternary op to a var
+//! such as 
+//! a = 1 < 2 ? 3 : 4; // a = 3 (Note the absence of keyword `var`, it's because this is an Assignment Expression)
+//! 
 //!
-//! *expression*  → `ternary`
+//! *expression*  → `assignment`;
+//! 
+//! *assignment*  → `ternary` | IDENTIFIER "=" assignment
 //! 
 //! *ternary*     → `equality` | `equality` ? : `equality`;
 //!
@@ -97,7 +104,7 @@ impl Parser {
      pub fn comma_expression(&mut self) -> Result<Box<Expression>, ParserError> {
         let expr = self.expression()?;
         let mut expr_list: Vec<Box<Expression>> = vec![expr];
-        while self.matches(vec![COMMA] ) {
+        while self.matches(&[COMMA] ) {
             let next = self.expression()?;
             expr_list.push(next);
         }
@@ -109,16 +116,55 @@ impl Parser {
     }
     /// *expression*  → `equality`
     pub fn expression(&mut self) -> Result<Box<Expression>, ParserError> {
-        self.ternary()
+        // self.ternary()
+        self.assignment()
+    }
+    /// *assignment*  → `ternary` | IDENTIFIER "=" assignment
+    /// TODO : FIX
+    pub fn assignment(&mut self) -> Result<Box<Expression>, ParserError> {
+        // `a = "value";` This is a deviation from the standard way of parsing exprs until now
+        // where we would parse everything as an rval expression; we would match on the operator 
+        // and finally parse the remaining as part of one single expression. Here, `a` is not an expression per se
+        // rather, it's a reference to a symbol that may or may not exist when this line is being parsed
+        // resulting in a RuntimeError/Parser error if the latter is the case
+        //
+        // Consider makeList().head.next = node;
+        // Where assignment characteristic token `=` occurs after parsing multiple tokens like (), . , multiple idents etc.
+        // therefore our strategy is to parse as an expression, until we get to a `=` symbol after which we start parsing the 
+        // right as an rval and try an assignment operation. We use the lval as a storage location, if not, it's a parserError
+        let expression : Box<Expression> = self.ternary()?;
+        if self.matches(&[EQUAL]) {
+            // Since this is entered on variable assignment renaming helps 
+            // Since we have both if/else returns, we don't worry about moving into lval
+            let lval = expression;
+            let equal: Token = self
+                .previous
+                .take()
+                .expect("matches will ensure this field to be something");
+            let rval: Box<Expression> = self.assignment()?; // allows for b = a = 2 which means a -> 2 and b -> 2
+            // ensure lval is a Expression::Variable(_) and not something else : 
+            if let Expression::Variable(ref t) = *lval {
+                return Ok (
+                    box Expression::Assignment(AssignmentExpr {
+                        name: t.clone(),
+                        right: rval, 
+                    })
+                )
+            } else {
+                Lox::report_syntax_err(equal.ln, equal.col, format!("{}", ParserError::InvalidAssignmentTarget));
+                return Err(ParserError::InvalidAssignmentTarget);
+            }
+        }
+        Ok(expression)
     }
     /// *ternary*     → `equality` | `equality` ? : `equality`;
     pub fn ternary(&mut self) -> Result<Box<Expression>, ParserError> {
         let conditional_expr = self.equality()?;
-        while self.matches(vec![TERNARYC]) {
+        while self.matches(&[TERNARYC]) {
             let left_expr = self.expression()?;
-            while self.matches(vec![TERNARYE]) {
+            while self.matches(&[TERNARYE]) {
                 let right_expr = self.expression()?;
-                return Ok(Box::new(Expression::TernExp(TernaryExpr {
+                return Ok(Box::new(Expression::TernExpr(TernaryExpr {
                     condition: conditional_expr,
                     if_true: left_expr,
                     if_false: right_expr,
@@ -126,7 +172,7 @@ impl Parser {
             } 
             let prev = self.previous.clone().expect("Matches will ensure something here");
             Lox::report_syntax_err(prev.ln, prev.col, "Invalid Ternary expression".into());
-            return Err(ParserError::UnexpectedExpression);
+            return Err(ParserError::ExpectedExpression);
         
         }
         Ok(conditional_expr)
@@ -154,40 +200,40 @@ impl Parser {
             },
             Err(e) => return Err(e)
         }; 
-        while self.matches(vec![BANG_EQUAL, EQUAL_EQUAL]) {
+        while self.matches(&[BANG_EQUAL, EQUAL_EQUAL]) {
             let operator: Token = self
                 .previous
                 .take()
                 .expect("matches will ensure this field to be something");
             let right = self.comparison()?;
-            expr = Box::new(Expression::BinExp(BinaryExpr::new(expr, operator, right)));
+            expr = Box::new(Expression::BinExpr(BinaryExpr::new(expr, operator, right)));
         }
         Ok(expr)
     }
     /// *comparison*  → `term ("<="|"<"|">"|">=" term)*;`
     pub fn comparison(&mut self) -> Result<Box<Expression>, ParserError> {
         let mut expr = self.term()?;
-        while self.matches(vec![LESS, LESS_EQUAL, GREATER, GREATER_EQUAL]) {
+        while self.matches(&[LESS, LESS_EQUAL, GREATER, GREATER_EQUAL]) {
             let operator: Token = self
                 .previous
                 .take()
                 // .clone()
                 .expect("matches will ensure this field to be something");
             let right = self.term()?;
-            expr = Box::new(Expression::BinExp(BinaryExpr::new(expr, operator, right)));
+            expr = Box::new(Expression::BinExpr(BinaryExpr::new(expr, operator, right)));
         }
         Ok(expr)
     }
     /// *term*        → `factor ("+"|"-" factor)*;`
     pub fn term(&mut self) -> Result<Box<Expression>, ParserError> {
         let mut expr = self.factor()?;
-        while self.matches(vec![MINUS, PLUS]) {
+        while self.matches(&[MINUS, PLUS]) {
             let operator: Token = self
             .previous
             .take()
             .expect("matches will ensure this field to be something");
             let right = self.factor()?;
-            expr = Box::new(Expression::BinExp(BinaryExpr::new(expr, operator, right)));
+            expr = Box::new(Expression::BinExpr(BinaryExpr::new(expr, operator, right)));
         }
         Ok(expr)
     }
@@ -226,13 +272,13 @@ impl Parser {
             },
             Err(e) => return Err(e),
         };
-        while self.matches(vec![STAR, SLASH, MODULUS]) {
+        while self.matches(&[STAR, SLASH, MODULUS]) {
             let operator: Token = self
             .previous
             .take()
             .expect("matches will ensure this field to be something");
             let right = self.unary()?;
-            expr = Box::new(Expression::BinExp(BinaryExpr::new(expr, operator, right)));
+            expr = Box::new(Expression::BinExpr(BinaryExpr::new(expr, operator, right)));
         }
         if had_binary_expr_err {
             println!("Recovering..............");
@@ -242,13 +288,13 @@ impl Parser {
     }
     /// *unary*       → `("-" | "!") unary | primary;`
     pub fn unary(&mut self) -> Result<Box<Expression>, ParserError> {
-        if self.matches(vec![MINUS, BANG]) {
+        if self.matches(&[MINUS, BANG]) {
             let operator: Token = self
             .previous
             .take()
             .expect("matches will ensure this field to be something");
             let right_expr = self.unary()?;
-            return Ok(Box::new(Expression::UnExp(
+            return Ok(Box::new(Expression::UnExpr(
                 UnaryExpr::new(operator, right_expr)
                 .expect("Scanner should catch malformed unary expressions"),
             )));
@@ -258,8 +304,12 @@ impl Parser {
     /// *primary*     → `literal | "(" expression ")";`
     /// *literal*     → Number | String | "true" | "false" | "nil" ;
     pub fn primary(&mut self) -> Result<Box<Expression>, ParserError> {
+        if self.matches(&[IDENTIFIER])
+        {
+            return Ok(box Expression::Variable(self.previous.take().expect("infallible")));
+        }
         // "1+3+4(3+4)"
-        if self.matches(vec![FALSE, TRUE, NIL, NUMBER, STRING]) {
+        if self.matches(&[FALSE, TRUE, NIL, NUMBER, STRING]) {
             // Previous is sure to exist if this branch is entered
             // Also constructing a literal is infallible at this stage
             let _p = self.previous.clone().expect("Previous should have something here");
@@ -282,7 +332,7 @@ impl Parser {
             Ok(Box::new(Expression::Lit(
                 Literal::new(self.previous.take().unwrap()).unwrap(),
             )))
-        } else if self.matches(vec![LEFT_PAREN]) {
+        } else if self.matches(&[LEFT_PAREN]) {
             let expr = self.expression()?;
             let _expect_right_paren = self.consume(RIGHT_PAREN)?;
             // This assertion should never fail
@@ -296,7 +346,7 @@ impl Parser {
             // fits into the grammar production after falling from expression upto token, in which case we have to write code
             // to handle that, or the Token is simply in the wrong place and a parser error should be reported "
             // panic!("Cannot parse as primary expression");
-            if !self.is_at_end() && self.matches(vec![PLUS, MINUS, SLASH, STAR, EQUAL_EQUAL, BANG_EQUAL, EQUAL, LESS, GREATER, LESS_EQUAL, GREATER_EQUAL]){
+            if !self.is_at_end() && self.matches(&[PLUS, MINUS, SLASH, STAR, EQUAL_EQUAL, BANG_EQUAL, EQUAL, LESS, GREATER, LESS_EQUAL, GREATER_EQUAL]){
                 // Capture multiple invalid tokens or operators appearing at start of expression
                 self.error_production.push(self.previous.clone().expect("Matches will always be something"));
                 // Don't worry, this error is caught in binary expression parser and it will recognize the error production
@@ -307,7 +357,7 @@ impl Parser {
             else {
                 // self.is_at_end == true and a primary expression is being searched for, but since is_at_end == true,
                 // the next token is EOF, and therefore the expression is ill-formed
-                Err(ParserError::UnexpectedExpression)
+                Err(ParserError::ExpectedExpression)
             }
         }
     }
@@ -328,7 +378,7 @@ impl Parser {
     /// so we can pass all comparison operators in the searchable list and if we get a yes back from this function,
     /// it means that we must call the comparision rule again, otherwise we are done with comparison expressions and must
     /// "descend" down the grammar rule list to *term* and so on
-    fn matches(&mut self, searchable_list: Vec<TokenType>) -> bool {
+    fn matches(&mut self, searchable_list: &[TokenType]) -> bool {
         if self.is_at_end() {
             return false;
         }
@@ -386,7 +436,7 @@ impl Parser {
                 Lox::report_syntax_err(peeked_token.ln, peeked_token.col, format!("Unexpected end of file, found {:#?}, expected `{expected_token:?}`", peeked_token.r#type));
                 return Err(ParserError::UnexpectedEOF);
             }
-            Err(ParserError::UnexpectedExpression)
+            Err(ParserError::ExpectedExpression)
         }
     }
     /// This function is called in the event of a `ParserError`. Handlers of `ParserError` can call this function
@@ -437,6 +487,7 @@ impl Parser {
             // BUG_FIXED: Doesn't synchronize on multiline comments
             // BUG : Infinte loop on char
             loc!(format!("Number of statements : {}", stmts.len()));
+            loc!(format!("statements : {:?}", stmts));
         }
         stmts
     }
@@ -446,7 +497,7 @@ impl Parser {
         // When panic, call self.synchronize()
         // Declarations can be either a VarDecl or a normal Statement, 
         // we decide that here: 
-        if self.matches(vec![VAR]) {
+        if self.matches(&[VAR]) {
             match self.var_declaration() {
                 Ok(d) => d,
                 Err(err) => { 
@@ -462,11 +513,11 @@ impl Parser {
         }
     }
     fn var_declaration(&mut self) -> Result<Declaration, ParserError> {
-        if self.matches(vec![IDENTIFIER])  {
+        if self.matches(&[IDENTIFIER])  {
             let name_token = self.previous.take().expect("matches is infallible");
             let name = name_token.lexeme;
             // Variable decl and init
-            if self.matches(vec![EQUAL]) {
+            if self.matches(&[EQUAL]) {
                 let initializer = self.expression()?;
                 self.consume(SEMICOLON)?;
                 let _equal = self.previous.take().expect("Safe to unwrap here");                
@@ -485,12 +536,12 @@ impl Parser {
     }
     /// Parse as a statement, converting ParserErrors into ErrStmt enclosing the ParserError
     fn statement(&mut self) -> Stmt {
-        if self.matches(vec![COMMENT, MULTI_LINE_COMMENT]) {
+        if self.matches(&[COMMENT, MULTI_LINE_COMMENT]) {
             if self.is_at_end() {
                 return Stmt::Empty;
             }
         }
-        let stmt = if self.matches(vec![PRINT]) {
+        let stmt = if self.matches(&[PRINT]) {
             self.print_statement()
         } 
         else {

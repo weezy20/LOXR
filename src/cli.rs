@@ -6,6 +6,7 @@ use std::io::Read;
 pub fn run_cli() {
     let args = std::env::args().collect::<Vec<String>>();
     if args.len() == 2 {
+        // TODO: This is unreliable
         let mut file_path = File::open(&args[1]).expect(&format!("Cannot open file {}", &args[1]));
         let mut file = String::new();
         file_path
@@ -58,10 +59,11 @@ pub(in crate::cli) fn run_file(file: &str) {
 
 mod repl {
     use super::*;
+    use _lox_::interpreter::Interpreter;
     use rustyline::{error::ReadlineError, Editor};
     #[allow(unreachable_code)]
     pub(crate) fn start_repl() -> std::io::Result<()> {
-        let mut lox_interpreter = Lox::new(Default::default());
+        let mut lox_interpreter = Interpreter::new(Default::default());
         #[allow(unused_assignments)]
         let mut buf = String::new();
         let mut rl = Editor::<()>::new();
