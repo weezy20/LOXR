@@ -58,6 +58,6 @@ pub enum EvalError {
 pub enum RuntimeError {
     #[error("Uncaught reference: {} at {} ", _1, _0)]
     UncaughtReference(Token, String),
-    #[error("Variable {} not declared before use ", _0)]
+    #[error("Variable '{}' not declared before use ", _0.bright_yellow().bold())]
     UndefinedVar(String)
 }

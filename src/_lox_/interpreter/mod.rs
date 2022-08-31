@@ -55,6 +55,7 @@ impl Interpreter {
                 Declaration::VarDecl { name, initializer } => {
                     let val = if let Some(expr) = initializer {
                         expr.eval(&mut self.env)
+                            // BUG: var a = b where both are undefined results in panic
                             .expect("Unsafe unwrap of ValueResult") // TODO: Deal with this unwrap
                     } else {
                         Value::Nil
