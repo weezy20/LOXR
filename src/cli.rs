@@ -68,7 +68,7 @@ mod repl {
                 std::process::exit(0);
             }
             if let Some(semicolon) = input.chars().last() {
-                if semicolon != ';' {
+                if semicolon != ';' && semicolon != '}' {
                     let mut s = input.to_string();
                     s.push(';');
                     lox_interpreter.run(Some(s));
