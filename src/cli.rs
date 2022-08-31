@@ -62,10 +62,18 @@ mod repl {
                     std::process::exit(1);
                 }
             }
-            let input = buf.trim();
+            let input: &str = buf.trim();
             if input == "exit" || input == "quit" {
                 println!("Exiting Lox interpreter");
                 std::process::exit(0);
+            }
+            if let Some(semicolon) = input.chars().last() {
+                if semicolon != ';' {
+                    let mut s = input.to_string();
+                    s.push(';');
+                    lox_interpreter.run(Some(s));
+                    continue;
+                }
             }
             lox_interpreter.run(Some(String::from(input)));
             buf.clear();
