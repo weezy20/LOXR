@@ -1,11 +1,11 @@
 use std::cmp::Ordering;
 
 use crate::interpreter::Memory;
-use crate::loc;
 use crate::parser::error::EvalError;
 use crate::parser::expressions::*;
 use crate::parser::value::Value;
 use crate::tokenizer::token_type::TokenType::*;
+use crate::{loc, Lox};
 
 pub type ValueResult = Result<Value, EvalError>;
 
@@ -75,14 +75,19 @@ impl<E: Memory> Evaluate<E> for AssignmentExpr {
     fn eval(&self, env: &mut E) -> ValueResult {
         let (name, right) = (&self.name.lexeme, &self.right);
         let rval = right.eval(env)?;
+        /*.map_err(|eval_err| {
+            // Lox::report_runtime_err(format!("{eval_err}"));
+            eval_err // Idempotent mapping lol
+        })?;*/
         match env.put(name, rval.clone()) {
             // print a = 2 should print "2"
             Ok(()) => Ok(rval),
-            Err(_err) => {
-                loc!(format!("{_err}"));
+            Err(err) => {
+                loc!(format!("{err}"));
+                Lox::report_runtime_err(format!("{err}"));
                 Err(EvalError::InvalidExpr(
-                    (**right).clone(),
-                    Some("Cannot evaluate this right expression in assignment".into()),
+                    Expression::Assignment(self.clone()),
+                    Some("Cannot assign rval as variable not declared".into()),
                 ))
             }
         }

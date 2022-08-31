@@ -60,16 +60,16 @@ impl Lox {
         );
     }
     /// Handler for errors that are thrown by the interpreter
-    pub fn report_runtime_err(&mut self, line: usize, col: usize, message: String) {
+    pub fn report_runtime_err(message: String) {
         eprintln!(
-            "{runtime_error}: {message} at {line_no}, {col_no}",
+            "{runtime_error}: {message}",
             runtime_error = "Runtime Error".bright_red(),
-            line_no = format!("line {line}").yellow(),
-            col_no = format!("column {col}").yellow()
+            // line_no = format!("line {line}").yellow(),
+            // col_no = format!("column {col}").yellow()
         );
-        if !self.had_runtime_error {
-            self.had_runtime_error = true;
-        }
+        // if !self.had_runtime_error {
+        //     self.had_runtime_error = true;
+        // }
     }
     pub fn run(&mut self, line: Option<String>) {
         if let Some(src) = line {
@@ -94,9 +94,9 @@ impl Lox {
         let tokens = scanner.tokens;
         let parser = Parser::new(tokens);
         // let parser = parser.clone();
-        self.repl_interpreter.new_parser(parser);
+        self.repl_interpreter.extend(parser);
         // let mut interpreter = Interpreter::new_parser(interpreter, parser);
-        self.repl_interpreter.interpret();
+        // self.repl_interpreter.interpret(); // This will run the entire interpreter 
         return;
     }
 }
