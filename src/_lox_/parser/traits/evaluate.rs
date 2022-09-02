@@ -87,7 +87,7 @@ impl<E: Memory> Evaluate<E> for AssignmentExpr {
                 Lox::report_runtime_err(format!("{err}"));
                 Err(EvalError::InvalidExpr(
                     Expression::Assignment(self.clone()),
-                    Some("Cannot assign rval as variable not declared".into()),
+                    Some("Cannot assign as variable not declared. Consider declaring with `var` first ".into()),
                 ))
             }
         }

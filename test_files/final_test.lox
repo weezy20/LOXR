@@ -1,0 +1,79 @@
+// https://github.com/obi1kenobi/crafty-interpreters/blob/main/src/lox_program.lox
+print "precedence and operations";
+print "";
+print true and !false and !(false and true) != 123 + 45 * 2;
+var foo = 123;
+print foo;
+foo = foo - 1;
+print foo;
+print foo + 456;
+
+print "";
+print "short-circuiting";
+print "";
+print false and "and did not short-circuit!";
+print true or "or did not short-circuit!";
+
+print "";
+print "scopes test";
+print "";
+var a = "global a";
+var b = "global b";
+var c = "global c";
+{
+var a = "outer a";
+var b = "outer b";
+{
+    var a = "inner a";
+    print a;
+    print b;
+    print c;
+}
+print a;
+print b;
+print c;
+}
+print a;
+print b;
+print c;
+
+print "";
+print "nesting scopes";
+print "";
+var a = 1;
+{
+    var a = a + 2;
+    print a;
+}
+
+print "";
+print "empty block";
+print "";
+{ }
+
+print "";
+print "nested ifs precedence";
+print "";
+if (true) if (false) print "wrong!"; else print "expected!";
+print "if 'expected!' isn't above this line then the code is wrong";
+
+print "";
+print "while loop";
+print "";
+var cnt = 2;
+while (cnt > 0) {
+    cnt = cnt - 1;
+    print "loop!";
+}
+
+print "";
+print "for loop";
+print "";
+for (var i = 0; i < 2; i = i + 1) {
+    print "loop!";
+}
+
+print "";
+print "clock function";
+print "";
+print clock();

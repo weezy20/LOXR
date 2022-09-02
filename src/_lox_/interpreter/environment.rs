@@ -4,11 +4,22 @@ use crate::{
     parser::{error::RuntimeError, value::Value},
     tokenizer::token::Token,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct Environment {
     pub values: HashMap<String, Value>,
+    /// Enclosing scope, for global scope it's none
+    enclosing: Option<Rc<Environment>>,
+}
+impl Environment {
+    /// Create a new sub-environment of `enclosing`
+    pub fn new(enclosing: &Rc<Environment>) -> Self {
+        Self {
+            enclosing: Some(Rc::clone(&enclosing)),
+            ..Default::default()
+        }
+    }
 }
 
 impl Memory for Environment {
@@ -28,6 +39,13 @@ impl Memory for Environment {
                 // if self.values.contains_key(&name) {
                 //     return Ok(None);
                 // }
+                let mut super_scope = self.enclosing;
+                while let Some(encl) = super_scope {
+                    if let Ok(Some(val)) = encl.get(&token) {
+                        return Ok(Some(val))
+                    }
+                    super_scope = encl.enclosing;
+                }
                 Err(RuntimeError::UncaughtReference(
                     token.clone(),
                     format!("variable '{name}' is not defined"),
