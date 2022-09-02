@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use crate::loc;
 use crate::parser::error::{EvalError, RuntimeError};
 use crate::parser::expressions::{AssignmentExpr, Expression};
@@ -15,8 +16,12 @@ pub use environment::Environment;
 #[derive(Default, Debug)]
 pub struct Interpreter {
     stmts: Vec<Declaration>,
-    // TODO: Can be made generic over environment
+    // TODO: Can be made generic over environment (requires too much work)
     env: Environment,
+    // Default false
+    pub(crate) repl: bool,
+    // index for repl mode
+    previous: usize,
 }
 
 pub trait Memory {
@@ -34,71 +39,77 @@ impl Interpreter {
     }
     /// Extend a repl interpreter and interpret the added stmts
     pub fn extend(&mut self, mut p: Parser) {
-        let previous = self.stmts.len();
+        assert!(
+            self.repl,
+            "ICE : Extend can only be called on repl mode, call interpret() instead"
+        );
+        self.previous = self.stmts.len();
         self.stmts.append(&mut p.parse());
         loc!(format!("Interpreter modified -> {self:?}"));
-        for stmt in self.stmts[previous..].iter() {
-            // Statements should produce no value, except ExprStmt
-            let val: ValueResult = match stmt {
-                DStmt(d) => match d {
-                    Stmt::ExprStmt(e) | Stmt::Print(e) => e.eval(&mut self.env),
-                    Stmt::ErrStmt { message } => {
-                        loc!();
-                        eprintln!(
-                            "{}{}{message}",
-                            "Interpreter Error: ".red(),
-                            "Bad statement ".yellow()
-                        );
-                        Ok(Value::Nil)
-                    }
-                    Stmt::Empty => Ok(Value::Nil),
-                },
-                // Declarations should produce no values
-                Declaration::VarDecl { name, initializer } => {
-                    // let init_err : Option<EvalError> = None;
-                    let val = if let Some(expr) = initializer {
-                        match expr.eval(&mut self.env) {
-                            Ok(v) => v,
-                            Err(eval_err) => {
-                                loc!();
-                                eprintln!("{} {eval_err}", "Interpreter Error:".red());
-                                continue;
-                            }
-                        }
-                    } else {
-                        Value::Nil
-                    };
-                    println!("var {name} declared to {}", val);
-                    self.env.define(name, val);
-                    crate::loc!(format!("{:?}", self.env.values));
-                    Ok(Value::Nil)
-                }
-                Declaration::ErrDecl => {
-                    loc!();
-                    eprintln!(
-                        "{}{}",
-                        "Interpreter Error: ".red(),
-                        "Variable declaration error".yellow()
-                    );
-                    Ok(Value::Nil)
-                }
-            };
-            match val {
-                Ok(val) => {
-                    println!(">> {}", val);
-                }
-                Err(e) => {
-                    loc!();
-                    eprintln!("{} {e}", "Interpreter Error:".red());
-                }
-            };
-        }
+        self.interpret();
+        // Alernatively we could check
+        // if self.is_repl_mode ? then for stmt in self.stmts[self.previous..].iter() { .. }
+        // This would eliminate code duplication in `interpret()` and `extend()`
+        // for stmt in self.stmts[self.previous..].iter() {
+        //     // Statements should produce no value, except ExprStmt
+        //     let val: ValueResult = match stmt {
+        //         DStmt(d) => match d {
+        //             Stmt::ExprStmt(e) | Stmt::Print(e) => e.eval(&mut self.env),
+        //             Stmt::ErrStmt { message } => {
+        //                 loc!();
+        //                 eprintln!(
+        //                     "{}{}{message}",
+        //                     "Interpreter Error: ".red(),
+        //                     "Bad statement ".yellow()
+        //                 );
+        //                 Ok(Value::Nil)
+        //             }
+        //             Stmt::Empty => Ok(Value::Nil),
+        //         },
+        //         // Declarations should produce no values
+        //         Declaration::VarDecl { name, initializer } => {
+        //             // let init_err : Option<EvalError> = None;
+        //             let val = if let Some(expr) = initializer {
+        //                 match expr.eval(&mut self.env) {
+        //                     Ok(v) => v,
+        //                     Err(eval_err) => {
+        //                         loc!();
+        //                         eprintln!("{} {eval_err}", "Interpreter Error:".red());
+        //                         continue;
+        //                     }
+        //                 }
+        //             } else {
+        //                 Value::Nil
+        //             };
+        //             println!("var {name} declared to {}", val);
+        //             self.env.define(name, val);
+        //             crate::loc!(format!("{:?}", self.env.values));
+        //             Ok(Value::Nil)
+        //         }
+        //         Declaration::ErrDecl => {
+        //             loc!();
+        //             eprintln!(
+        //                 "{}{}",
+        //                 "Interpreter Error: ".red(),
+        //                 "Variable declaration error".yellow()
+        //             );
+        //             Ok(Value::Nil)
+        //         }
+        //     };
+        //     match val {
+        //         Ok(val) => {
+        //             println!(">> {}", val);
+        //         }
+        //         Err(e) => {
+        //             loc!();
+        //             eprintln!("{} {e}", "Interpreter Error:".red());
+        //         }
+        //     };
+        // }
     }
 
     pub fn interpret(&mut self) -> () {
-        // Alernatively we could check 
-        // if self.is_repl_mode ? then for stmt in self.stmts[self.previous..].iter() { .. }
-        for stmt in self.stmts.iter() {
+        for stmt in self.stmts[self.previous..].iter() {
             let val: ValueResult = match stmt {
                 DStmt(d) => match d {
                     Stmt::ExprStmt(e) | Stmt::Print(e) => e.eval(&mut self.env),

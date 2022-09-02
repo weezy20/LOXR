@@ -94,6 +94,7 @@ impl Lox {
         let tokens = scanner.tokens;
         let parser = Parser::new(tokens);
         // let parser = parser.clone();
+        self.repl_interpreter.repl = true;
         self.repl_interpreter.extend(parser);
         // let mut interpreter = Interpreter::new_parser(interpreter, parser);
         // self.repl_interpreter.interpret(); // This will run the entire interpreter 

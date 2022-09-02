@@ -1,5 +1,3 @@
-use colored::Colorize;
-
 use super::token_type::TokenType;
 
 #[derive(Debug, Clone, Default, PartialEq)]
