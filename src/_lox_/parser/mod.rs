@@ -418,7 +418,7 @@ impl Parser {
             return Ok(self.advance());
         }
         else if let Some(peeked_token) = self.tokens.peek() && peeked_token.r#type != EOF { 
-            Lox::report_syntax_err(peeked_token.ln, peeked_token.col, format!("Invalid Token> {peeked_token:#?} encountered\nExpected {expected_token:#?}") );
+            // Lox::report_syntax_err(peeked_token.ln, peeked_token.col, format!("Invalid Token> {peeked_token:#?} encountered\nExpected {expected_token:#?}") );
             Err(ParserError::InvalidToken(self.tokens.peek().cloned()))
         } 
         // None is peeked that means we are at EOF

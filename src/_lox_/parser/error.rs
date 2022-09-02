@@ -8,7 +8,7 @@ use colored::Colorize;
 pub enum ParserError {
     #[error("Parenthesis mismatch")]
     UnbalancedParen,
-    #[error("Invalid token found: {:#?}", match self {
+    #[error("Invalid token found: {}", match self {
         ParserError::InvalidToken(Some(t)) => format!("{t}", t=t.lexeme),
         ParserError::InvalidToken(None) => format!("Unknown Token"),
         _ => "This should never print lmao?".into()

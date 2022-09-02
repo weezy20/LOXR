@@ -267,7 +267,7 @@ mod parser_tests {
         let tokens = setup_lox!("a=-1+3+4(3+4)");
         let res = Parser::new(tokens).run();
         assert!(res.is_ok());
-        let tokens = setup_lox!("a=-1+3+4/(3+4)");
+        let tokens = setup_lox!("var a=-1+3+4/(3+4)");
         let res = Parser::new(tokens).run();
         assert!(res.is_ok());
     }
