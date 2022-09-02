@@ -30,7 +30,7 @@ impl Memory for Environment {
                 // }
                 Err(RuntimeError::UncaughtReference(
                     token.clone(),
-                    format!("variable {name} is not defined"),
+                    format!("variable '{name}' is not defined"),
                 ))
             }
         }

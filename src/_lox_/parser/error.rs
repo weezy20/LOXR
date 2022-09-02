@@ -50,13 +50,13 @@ pub enum EvalError {
     ErrorProduction,
     #[error("Cannot divide by zero in: {0}")]
     DivideByZero(Expression),
-    #[error("Cannot evaluate variable : {0}")]
+    #[error("{0}")]
     VariableEval(RuntimeError)
 }
 
 #[derive(Error, Debug, PartialEq)]
 pub enum RuntimeError {
-    #[error("Uncaught reference: {} at {} ", _1, _0)]
+    #[error("Uncaught reference: {} at [{}] ", _1, _0.location().bright_yellow())]
     UncaughtReference(Token, String),
     #[error("Variable '{}' not declared before use ", _0.bright_yellow().bold())]
     UndefinedVar(String)

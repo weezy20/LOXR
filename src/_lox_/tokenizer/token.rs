@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use super::token_type::TokenType;
 
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -26,6 +28,10 @@ impl Token {
             ln: line_number,
             col,
         }
+    }
+    /// Returns the location as a string 
+    pub fn location(&self) -> String {
+        format!("{}{}{}{}", "line ",self.ln, " col ", self.col )
     }
     /// Returns a string representation of the current Token
     pub fn to_string(&self) -> String {

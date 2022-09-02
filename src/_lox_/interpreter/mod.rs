@@ -38,8 +38,9 @@ impl Interpreter {
         self.stmts.append(&mut p.parse());
         loc!(format!("Interpreter modified -> {self:?}"));
         for stmt in self.stmts[previous..].iter() {
+            // Statements should produce no value, except ExprStmt
             let val: ValueResult = match stmt {
-                DStmt(dstmt) => match dstmt {
+                DStmt(d) => match d {
                     Stmt::ExprStmt(e) | Stmt::Print(e) => e.eval(&mut self.env),
                     Stmt::ErrStmt { message } => {
                         loc!();
@@ -52,11 +53,18 @@ impl Interpreter {
                     }
                     Stmt::Empty => Ok(Value::Nil),
                 },
+                // Declarations should produce no values
                 Declaration::VarDecl { name, initializer } => {
+                    // let init_err : Option<EvalError> = None;
                     let val = if let Some(expr) = initializer {
-                        expr.eval(&mut self.env)
-                            // BUG: var a = b where both are undefined results in panic
-                            .expect("Unsafe unwrap of ValueResult") // TODO: Deal with this unwrap
+                        match expr.eval(&mut self.env) {
+                            Ok(v) => v,
+                            Err(eval_err) => {
+                                loc!();
+                                eprintln!("{} {eval_err}", "Interpreter Error:".red());
+                                continue;
+                            }
+                        }
                     } else {
                         Value::Nil
                     };
@@ -88,9 +96,11 @@ impl Interpreter {
     }
 
     pub fn interpret(&mut self) -> () {
+        // Alernatively we could check 
+        // if self.is_repl_mode ? then for stmt in self.stmts[self.previous..].iter() { .. }
         for stmt in self.stmts.iter() {
             let val: ValueResult = match stmt {
-                DStmt(dstmt) => match dstmt {
+                DStmt(d) => match d {
                     Stmt::ExprStmt(e) | Stmt::Print(e) => e.eval(&mut self.env),
                     Stmt::ErrStmt { message } => {
                         loc!();
@@ -103,10 +113,18 @@ impl Interpreter {
                     }
                     Stmt::Empty => Ok(Value::Nil),
                 },
+                // Declarations should produce no values
                 Declaration::VarDecl { name, initializer } => {
+                    // let init_err : Option<EvalError> = None;
                     let val = if let Some(expr) = initializer {
-                        expr.eval(&mut self.env)
-                            .expect("Unsafe unwrap of ValueResult") // TODO: Deal with this unwrap
+                        match expr.eval(&mut self.env) {
+                            Ok(v) => v,
+                            Err(eval_err) => {
+                                loc!();
+                                eprintln!("{} {eval_err}", "Interpreter Error:".red());
+                                continue;
+                            }
+                        }
                     } else {
                         Value::Nil
                     };
@@ -132,7 +150,6 @@ impl Interpreter {
                 Err(e) => {
                     loc!();
                     eprintln!("{} {e}", "Interpreter Error:".red());
-                    continue;
                 }
             };
         }
