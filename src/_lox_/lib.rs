@@ -1,6 +1,7 @@
 #![feature(let_chains)]
 #![feature(box_syntax)]
 #![feature(get_mut_unchecked)]
+// #![forbid(unsafe_code)] // todo
 
 //! This module contains all definitions for the Lox compiler and Lox interpreter
 mod tests;

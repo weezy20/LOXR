@@ -11,7 +11,7 @@ use crate::parser::{
 };
 use crate::tokenizer::token::Token;
 use colored::Colorize;
-use std::borrow::BorrowMut;
+use std::cell::RefCell;
 use std::rc::Rc;
 mod environment;
 pub use environment::Environment;
@@ -19,9 +19,7 @@ pub use environment::Environment;
 #[derive(Default, Debug)]
 pub struct Interpreter {
     stmts: Vec<Declaration>,
-    // TODO: Can be turned into Rc<Environment>
-    env: Rc<Environment>,
-    // Default false
+    env: Rc<RefCell<Environment>>,
     pub(crate) repl: bool,
     // index for repl mode
     previous: usize,
@@ -29,7 +27,7 @@ pub struct Interpreter {
 
 pub trait Memory {
     fn define(&mut self, name: &str, value: Value);
-    fn get(&self, name: &Token) -> Result<Option<&Value>, RuntimeError>;
+    fn get(&self, name: &Token) -> Result<Option<Value>, RuntimeError>;
     fn put(&mut self, name: &str, value: Value) -> Result<(), RuntimeError>;
 }
 
@@ -52,10 +50,14 @@ impl Interpreter {
         self.interpret();
         // if self.is_repl_mode ? then for stmt in self.stmts[self.previous..].iter() { .. }
     }
-    /// Execute a block of statements inside new environment
-    fn execute_block(&self, statements: &Vec<Declaration>, env: Rc<Environment>) -> ValueResult {
+    /// Execute a block of statements inside new environment `sub_env`
+    fn execute_block(
+        &self,
+        statements: &Vec<Declaration>,
+        sub_env: Rc<RefCell<Environment>>,
+    ) -> ValueResult {
         for stmt in statements.iter() {
-            match self.execute(stmt, Rc::clone(&env)) {
+            match self.execute(stmt, Rc::clone(&sub_env)) {
                 Ok(val) => {
                     if val != Value::Nil {
                         println!(">> {}", val);
@@ -69,14 +71,15 @@ impl Interpreter {
         }
         Ok(Value::Nil)
     }
-    // Suggestion: Might change to a new InterpreterResult
-    fn execute(&self, stmt: &Declaration, mut rc_env: Rc<Environment>) -> ValueResult {
+    /// Execute a statement inside a new environment `rc_env`
+    fn execute(&self, stmt: &Declaration, mut rc_env: Rc<RefCell<Environment>>) -> ValueResult {
         // Since our Rc is already "owned" by enclosing functions, we cannot safely deref_mut it
         // But in a single threaded context this will be safe
-        let env: &mut Environment = unsafe { Rc::get_mut_unchecked(&mut rc_env) };
+        // let env: &mut Environment = unsafe { Rc::get_mut_unchecked(&mut rc_env) };
+        // let env: &mut Environment = &mut rc_env.borrow_mut(); // not needed after impl Memory for Rc<RefCell<Environment>>
         match stmt {
             DStmt(d) => match d {
-                Stmt::ExprStmt(x) | Stmt::Print(x) => x.eval(env),
+                Stmt::ExprStmt(x) | Stmt::Print(x) => x.eval(&mut Rc::clone(&rc_env)),
                 Stmt::ErrStmt { message } => {
                     loc!();
                     eprintln!(
@@ -87,12 +90,16 @@ impl Interpreter {
                     Ok(Value::Nil)
                 }
                 Stmt::Empty => Ok(Value::Nil),
-                Stmt::Block(stmts) => self.execute_block(stmts, Rc::clone(&rc_env)),
+                // Create a new environment
+                Stmt::Block(stmts) => self.execute_block(
+                    stmts,
+                    Rc::new(RefCell::new(Environment::new(Rc::clone(&rc_env)))),
+                ),
             },
             Declaration::VarDecl { name, initializer } => {
                 // let init_err : Option<EvalError> = None;
                 let val = if let Some(expr) = initializer {
-                    match expr.eval(env) {
+                    match expr.eval(&mut Rc::clone(&rc_env)) {
                         Ok(v) => v,
                         Err(eval_err) => {
                             loc!();
@@ -104,7 +111,7 @@ impl Interpreter {
                     Value::Nil
                 };
                 println!("var {name} declared to {}", val);
-                env.define(name, val);
+                rc_env.define(name, val);
                 crate::loc!(format!("{:?}", self.env.values));
                 Ok(Value::Nil)
             }
@@ -125,7 +132,8 @@ impl Interpreter {
             let val: ValueResult = match stmt {
                 DStmt(d) => match d {
                     Stmt::ExprStmt(e) | Stmt::Print(e) => {
-                        e.eval(Rc::get_mut(&mut self.env).expect("ICE: obtain &mut Env"))
+                        // e.eval(Rc::get_mut(&mut self.env).expect("ICE: obtain &mut Env"))
+                        e.eval(&mut Rc::clone(&self.env))
                     }
                     Stmt::ErrStmt { message } => {
                         loc!();
@@ -137,16 +145,15 @@ impl Interpreter {
                         Ok(Value::Nil)
                     }
                     Stmt::Empty => Ok(Value::Nil),
-                    Stmt::Block(scoped_stmts) => self.execute_block(
-                        scoped_stmts,
-                        Rc::new(Environment::new(Rc::clone(&self.env))),
-                    ),
+                    Stmt::Block(scoped_stmts) => {
+                        self.execute_block(scoped_stmts, Rc::new(RefCell::new(Environment::new(Rc::clone(&self.env)))))
+                    }
                 },
                 // Declarations should produce no values
                 Declaration::VarDecl { name, initializer } => {
                     // let init_err : Option<EvalError> = None;
                     let val = if let Some(expr) = initializer {
-                        match expr.eval(Rc::get_mut(&mut self.env).expect("ICE: obtain &mut Env")) {
+                        match expr.eval(&mut Rc::clone(&self.env)) {
                             Ok(v) => v,
                             Err(eval_err) => {
                                 loc!();
@@ -158,9 +165,7 @@ impl Interpreter {
                         Value::Nil
                     };
                     println!("var {name} declared to {}", val);
-                    Rc::get_mut(&mut self.env)
-                        .expect("ICE: obtain &mut env")
-                        .define(name, val);
+                    self.env.define(name, val);
                     crate::loc!(format!("{:?}", self.env.values));
                     Ok(Value::Nil)
                 }
