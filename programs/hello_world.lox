@@ -1,4 +1,6 @@
 {
+    // Bug -> comment inside doesn't work 
+    // var a = /* comment in side  */ 1+1;
     var a = 1+1;
     // print a;
     var b;
