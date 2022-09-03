@@ -485,7 +485,7 @@ impl Parser {
             stmts.push(self.declaration());
             // BUG_FIXED: If var ? or an ErrDecl is returned, this loop never ends
             // BUG_FIXED: Doesn't synchronize on multiline comments
-            // BUG : Infinte loop on char
+            // BUG_FIXED : Infinte loop on char
             loc!(format!("Number of statements : {}", stmts.len()));
             loc!(format!("statements : {:?}", stmts));
         }
@@ -502,7 +502,7 @@ impl Parser {
                 Ok(d) => d,
                 Err(err) => { 
                     loc!("Declaration parsing error");
-                    eprintln!("{}", err);
+                    eprintln!("{}{}","ParserError".bright_cyan(), err);
                     let d = err.into(); // to leverage type inference for the following macro
                     loc!(d);
                     d // due to this rust can infer the type and use it in the above macro
@@ -543,7 +543,9 @@ impl Parser {
         }
         let stmt = if self.matches(&[PRINT]) {
             self.print_statement()
-        } 
+        } else if self.matches(&[LEFT_BRACE]) {
+            self.block_statement()
+        }
         else {
             self.expression_statement()
         };
@@ -567,5 +569,13 @@ impl Parser {
         // TODO: Errors on EOF not preceded by semicolon, should we error?
         self.consume(SEMICOLON)?;
         Ok(Stmt::ExprStmt(val))
+    }
+    fn block_statement(&mut self) -> Result<Stmt, ParserError> {     
+        let mut block_stmts: Vec<Declaration> = vec![];
+        while let Some(x) = self.peek() && x.r#type != RIGHT_BRACE && !self.is_at_end() {
+            block_stmts.push(self.declaration());
+        } 
+        self.consume(RIGHT_BRACE)?;
+        Ok(Stmt::Block(block_stmts))
     }
 }

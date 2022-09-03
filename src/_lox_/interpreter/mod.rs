@@ -26,7 +26,7 @@ pub struct Interpreter {
 
 pub trait Memory {
     fn define(&mut self, name: &str, value: Value);
-    fn get(&self, name: &Token) -> Result<Option<&Value>, RuntimeError>;
+    fn get(&self, name: &Token) -> Result<&Value, RuntimeError>;
     fn put(&mut self, name: &str, value: Value) -> Result<(), RuntimeError>;
 }
 
@@ -65,6 +65,7 @@ impl Interpreter {
                         Ok(Value::Nil)
                     }
                     Stmt::Empty => Ok(Value::Nil),
+                    Stmt::Block(_) => todo!(),
                 },
                 // Declarations should produce no values
                 Declaration::VarDecl { name, initializer } => {

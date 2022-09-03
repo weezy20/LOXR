@@ -51,15 +51,7 @@ impl<E: Memory> Evaluate<E> for Expression {
                 // We want the syntax tree to reflect that an l-value isn’t evaluated like a normal expression.
                 // TODO: What should a variable evaluate to?
                 match env.get(t) {
-                    Ok(v) => {
-                        if let Some(val) = v {
-                            // Declared and init
-                            Ok(val.to_owned())
-                        } else {
-                            // Declared but not init
-                            Ok(Value::Nil)
-                        }
-                    }
+                    Ok(v) => Ok(v.to_owned()),
                     // undefined
                     Err(err) => {
                         loc!(format!("Error on variable.eval() {err}"));

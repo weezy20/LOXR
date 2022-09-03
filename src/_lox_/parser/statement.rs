@@ -17,6 +17,9 @@ pub enum Stmt {
     ErrStmt { message: String },
     /// Represents a comment
     Empty,
+    /// Block scopes
+    #[display(fmt = "BlockStmt [{:?}]", "_0")]
+    Block(Vec<Declaration>),
 }
 
 /// Since var decls don't make sense every where we wrap Stmt inside Declaration such that any place
