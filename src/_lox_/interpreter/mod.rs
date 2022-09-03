@@ -10,6 +10,7 @@ use crate::parser::{
 };
 use crate::tokenizer::token::Token;
 use colored::Colorize;
+use std::borrow::BorrowMut;
 use std::rc::Rc;
 mod environment;
 pub use environment::Environment;
@@ -64,7 +65,9 @@ impl Interpreter {
         for stmt in self.stmts[self.previous..].iter() {
             let val: ValueResult = match stmt {
                 DStmt(d) => match d {
-                    Stmt::ExprStmt(e) | Stmt::Print(e) => e.eval(&mut self.env),
+                    Stmt::ExprStmt(e) | Stmt::Print(e) => {
+                        e.eval(Rc::get_mut(&mut self.env).expect("ICE: Failed to obtain &mut Env"))
+                    }
                     Stmt::ErrStmt { message } => {
                         loc!();
                         eprintln!(
@@ -84,7 +87,9 @@ impl Interpreter {
                 Declaration::VarDecl { name, initializer } => {
                     // let init_err : Option<EvalError> = None;
                     let val = if let Some(expr) = initializer {
-                        match expr.eval(&mut self.env) {
+                        match expr.eval(
+                            Rc::get_mut(&mut self.env).expect("ICE: Failed to obtain &mut Env"),
+                        ) {
                             Ok(v) => v,
                             Err(eval_err) => {
                                 loc!();
@@ -96,7 +101,7 @@ impl Interpreter {
                         Value::Nil
                     };
                     println!("var {name} declared to {}", val);
-                    self.env.define(name, val);
+                    Rc::get_mut(&mut self.env).expect("ICE: obtain &mut env").define(name, val);
                     crate::loc!(format!("{:?}", self.env.values));
                     Ok(Value::Nil)
                 }

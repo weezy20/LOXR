@@ -34,17 +34,17 @@ impl Environment {
         }
     }
 }
-impl Memory for Rc<Environment> {
-    fn define(&mut self, name: &str, value: Value) {
-        self.define(name, value)
-    }
-    fn get(&self, name: &Token) -> Result<&Value, RuntimeError> {
-        self.get(name)
-    }
-    fn put(&mut self, name: &str, value: Value) -> Result<(), RuntimeError> {
-        self.put(name, value)
-    }
-}
+// impl Memory for Rc<Environment> {
+//     fn define(&mut self, name: &str, value: Value) {
+//         (*self).define(name, value)
+//     }
+//     fn get(&self, name: &Token) -> Result<&Value, RuntimeError> {
+//         (*self).get(name)
+//     }
+//     fn put(&mut self, name: &str, value: Value) -> Result<(), RuntimeError> {
+//         (*self).put(name, value)
+//     }
+// }
 impl Memory for Environment {
     fn define(&mut self, name: &str, value: Value) {
         // If previous was something, the user just used var x = _ syntax to reassign to x instead of
