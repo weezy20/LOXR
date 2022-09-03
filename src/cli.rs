@@ -29,14 +29,31 @@ pub fn run_file(file: &str) {
 
 mod repl {
     use super::*;
-    // use _lox_::interpreter::{Environment, Interpreter};
     use rustyline::{error::ReadlineError, Editor};
+    // use rustyline::validate::MatchingBracketValidator;
+    // use rustyline::{Cmd, EventHandler, KeyCode, KeyEvent, Modifiers};
+    // use rustyline_derive::{Completer, Helper, Highlighter, Hinter, Validator};
+
+    // #[derive(Completer, Helper, Highlighter, Hinter, Validator)]
+    // struct InputValidator {
+    //     #[rustyline(Validator)]
+    //     brackets: MatchingBracketValidator,
+    // }
+
     #[allow(unreachable_code)]
     pub(crate) fn start_repl() -> std::io::Result<()> {
         let mut lox_interpreter = Lox::new(Default::default());
         #[allow(unused_assignments)]
         let mut buf = String::new();
-        let mut rl = Editor::<()>::new();
+        // let h = InputValidator {
+        //     brackets: MatchingBracketValidator::new(),
+        // };
+        let mut rl = Editor::<()>::new().expect("rustyline failed");
+        // rl.set_helper(Some(h));
+        // rl.bind_sequence(
+        //     KeyEvent(KeyCode::Char('s'), Modifiers::CTRL),
+        //     EventHandler::Simple(Cmd::Newline),
+        // );
         if rl.load_history("history.txt").is_err() {
             // println!("No previous history.");
         }

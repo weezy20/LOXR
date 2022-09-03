@@ -418,7 +418,8 @@ impl Parser {
             return Ok(self.advance());
         }
         else if let Some(peeked_token) = self.tokens.peek() && peeked_token.r#type != EOF { 
-            // Lox::report_syntax_err(peeked_token.ln, peeked_token.col, format!("Invalid Token> {peeked_token:#?} encountered\nExpected {expected_token:#?}") );
+            Lox::report_syntax_err(peeked_token.ln, peeked_token.col, format!("Invalid Token: {peeked_token} encountered\nExpected {expected_token:#?}") );
+            loc!();
             Err(ParserError::InvalidToken(self.tokens.peek().cloned()))
         } 
         // None is peeked that means we are at EOF
@@ -433,9 +434,11 @@ impl Parser {
             // We should enter this condition
             if let Some(peeked_token) = self.tokens.peek() && peeked_token.r#type == EOF {
                 // This should report EOF in the error msg
+                loc!();
                 Lox::report_syntax_err(peeked_token.ln, peeked_token.col, format!("Unexpected end of file, found {:#?}, expected `{expected_token:?}`", peeked_token.r#type));
                 return Err(ParserError::UnexpectedEOF);
             }
+            loc!();
             Err(ParserError::ExpectedExpression)
         }
     }
@@ -486,8 +489,7 @@ impl Parser {
             // BUG_FIXED: If var ? or an ErrDecl is returned, this loop never ends
             // BUG_FIXED: Doesn't synchronize on multiline comments
             // BUG_FIXED : Infinte loop on char
-            loc!(format!("Number of statements : {}", stmts.len()));
-            loc!(format!("statements : {:?}", stmts));
+            loc!(format!("{} statements : {:?}", stmts.len() , stmts));
         }
         stmts
     }
@@ -501,8 +503,7 @@ impl Parser {
             match self.var_declaration() {
                 Ok(d) => d,
                 Err(err) => { 
-                    loc!("Declaration parsing error");
-                    eprintln!("{}{}","ParserError".bright_cyan(), err);
+                    loc!(format!("Declaration parsing error : {}{}","Parser Error".bright_cyan(), err));
                     let d = err.into(); // to leverage type inference for the following macro
                     loc!(d);
                     d // due to this rust can infer the type and use it in the above macro
@@ -537,9 +538,7 @@ impl Parser {
     /// Parse as a statement, converting ParserErrors into ErrStmt enclosing the ParserError
     fn statement(&mut self) -> Stmt {
         if self.matches(&[COMMENT, MULTI_LINE_COMMENT]) {
-            if self.is_at_end() {
-                return Stmt::Empty;
-            }
+            return Stmt::Empty;
         }
         let stmt = if self.matches(&[PRINT]) {
             self.print_statement()
@@ -560,6 +559,7 @@ impl Parser {
     // We are not making use of Err(ParserError) yet, and just return Ok(ErrStmt) instead
     fn print_statement(&mut self) -> Result<Stmt, ParserError> {
         let val = self.parse_expression()?;
+        // println!("print statement - > {}", val);
         self.consume(SEMICOLON)?;
         Ok(Stmt::Print(val))
     }
@@ -579,6 +579,7 @@ impl Parser {
             block_stmts.push(self.declaration());
         } 
         self.consume(RIGHT_BRACE)?;
+        loc!("Block parsed successfully");
         Ok(block_stmts)
     }
 }

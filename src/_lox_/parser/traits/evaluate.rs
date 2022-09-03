@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 
 use crate::interpreter::Memory;
-use crate::parser::error::EvalError;
+use crate::parser::error::{EvalError, RuntimeError};
 use crate::parser::expressions::*;
 use crate::parser::value::Value;
 use crate::tokenizer::token_type::TokenType::*;
@@ -51,7 +51,17 @@ impl<E: Memory> Evaluate<E> for Expression {
                 // We want the syntax tree to reflect that an l-value isn’t evaluated like a normal expression.
                 // TODO: What should a variable evaluate to?
                 match env.get(t) {
-                    Ok(v) => Ok(v.to_owned()),
+                    Ok(v) => {
+                        if let Some(x) = v {
+                            Ok(x.to_owned())
+                        } else {
+                            // Ok(None) means variable was found in storage, but not initialized therefore it's an error
+                            // to use it before initialization
+                            Err(EvalError::VariableEval(RuntimeError::UndefinedVar(
+                                t.lexeme.clone(),
+                            )))
+                        }
+                    }
                     // undefined
                     Err(err) => {
                         loc!(format!("Error on variable.eval() {err}"));

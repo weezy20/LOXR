@@ -1,4 +1,3 @@
-#![allow(unused, warnings)]
 use super::Memory;
 use crate::{
     parser::{error::RuntimeError, value::Value},
@@ -41,47 +40,54 @@ impl Memory for Environment {
         // x = _ syntax
         let _previous: Option<Value> = self.values.insert(name.to_owned(), value);
     }
-    fn get(&self, token: &Token) -> Result<&Value, RuntimeError> {
+    fn get(&self, token: &Token) -> Result<Option<&Value>, RuntimeError> {
         // crate::loc!(format!("{:?}", self.values));
         let name = token.lexeme.clone();
         match self.values.get(&name) {
-            Some(val) => Ok(val),
+            Some(val) if *val == Value::Nil => Ok(None),
+            Some(val) => Ok(Some(val)),
             None => {
                 let mut current_env = self;
                 // We either find a value in enclosing scopes or none
                 let mut scoped_val: Option<&Value> = None;
-                'check_scopes: loop {
+                '_check_scopes: loop {
                     if let Some(ref encl_env) = current_env.enclosing {
-                        if let Some(val) = encl_env.get(&token).ok() {
+                        if let Ok(Some(val)) = encl_env.get(&token) {
                             break scoped_val = Some(val);
+                        } else if let Ok(None) = encl_env.get(&token) {
+                            // Variable declared but has Nil initializer
+                            break scoped_val = None;
                         } else {
                             current_env = encl_env;
                             continue;
                         }
                     }
                     // No enclosing environment, current_env is global env
+                    // Upto this we have not found the var declared
                     else {
                         assert!(
                             current_env.is_global,
                             "ICE: Current env expected to be global at this point"
                         );
-                        return current_env.values.get(&name).ok_or_else(|| {
-                            RuntimeError::UncaughtReference(
-                                token.clone(),
-                                format!("variable '{name}' is not defined"),
-                            )
-                        });
+                        match current_env.values.get(&name) {
+                            Some(val) if *val == Value::Nil => return Ok(None),
+                            Some(val) => return Ok(Some(val)),
+                            None => {
+                                return Err(RuntimeError::UncaughtReference(
+                                    token.clone(),
+                                    format!("variable '{name}' is not defined"),
+                                ))
+                            }
+                        }
                     }
                 } // Loop ends at current_env= global scope
-                if let Some(val) = scoped_val {
-                    return Ok(val);
-                }
+                return Ok(scoped_val);
                 // This code is unreachable but exists to make the compiler happy
-                println!("This should never print!");
-                Err(RuntimeError::UncaughtReference(
-                    token.clone(),
-                    format!("variable '{name}' is not defined"),
-                ))
+                // eprintln!("This should never print!");
+                // Err(RuntimeError::UncaughtReference(
+                //     token.clone(),
+                //     format!("variable '{name}' is not defined"),
+                // ))
             }
         }
     }

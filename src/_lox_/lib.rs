@@ -84,9 +84,8 @@ impl Lox {
             scanner.scan_tokens();
             let tokens = scanner.tokens;
             let parser = Parser::new(tokens);
-            let interpreter = Interpreter::new(parser);
-            unimplemented!("files unimplemented");
-            // TODO: run the interpreter, it doesn't run the interpreter now
+            let mut interpreter = Interpreter::new(parser);
+            interpreter.interpret();
         }
     }
     /// A REPL function. Interpret `src` as `lox` source and run it

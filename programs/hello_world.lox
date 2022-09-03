@@ -1,0 +1,13 @@
+{
+    var a = 1+1;
+    // print a;
+    var b;
+    print b = a+1;
+    // print "a = "+a;
+    // print "b = "+b;
+    print "a+b = "+a+b; // a and b are assumed to be strings since a string precedes the expression
+    // a is stringified. Then adding a string to b results in stringifying b as well
+    // a + b is concatenated instead of being added
+    var c; // declared
+    print c; // error
+}

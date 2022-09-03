@@ -29,7 +29,7 @@ pub struct Interpreter {
 
 pub trait Memory {
     fn define(&mut self, name: &str, value: Value);
-    fn get(&self, name: &Token) -> Result<&Value, RuntimeError>;
+    fn get(&self, name: &Token) -> Result<Option<&Value>, RuntimeError>;
     fn put(&mut self, name: &str, value: Value) -> Result<(), RuntimeError>;
 }
 
