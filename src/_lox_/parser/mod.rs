@@ -571,11 +571,14 @@ impl Parser {
         Ok(Stmt::ExprStmt(val))
     }
     fn block_statement(&mut self) -> Result<Stmt, ParserError> {     
+        Ok(Stmt::Block(self.block()?))
+    }
+    fn block(&mut self) -> Result<Vec<Declaration>, ParserError> {
         let mut block_stmts: Vec<Declaration> = vec![];
         while let Some(x) = self.peek() && x.r#type != RIGHT_BRACE && !self.is_at_end() {
             block_stmts.push(self.declaration());
         } 
         self.consume(RIGHT_BRACE)?;
-        Ok(Stmt::Block(block_stmts))
+        Ok(block_stmts)
     }
 }
