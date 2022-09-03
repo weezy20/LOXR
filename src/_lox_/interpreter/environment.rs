@@ -34,17 +34,6 @@ impl Environment {
         }
     }
 }
-// impl Memory for Rc<Environment> {
-//     fn define(&mut self, name: &str, value: Value) {
-//         (*self).define(name, value)
-//     }
-//     fn get(&self, name: &Token) -> Result<&Value, RuntimeError> {
-//         (*self).get(name)
-//     }
-//     fn put(&mut self, name: &str, value: Value) -> Result<(), RuntimeError> {
-//         (*self).put(name, value)
-//     }
-// }
 impl Memory for Environment {
     fn define(&mut self, name: &str, value: Value) {
         // If previous was something, the user just used var x = _ syntax to reassign to x instead of
@@ -75,7 +64,7 @@ impl Memory for Environment {
                             current_env.is_global,
                             "ICE: Current env expected to be global at this point"
                         );
-                        current_env.values.get(&name).ok_or_else(|| {
+                        return current_env.values.get(&name).ok_or_else(|| {
                             RuntimeError::UncaughtReference(
                                 token.clone(),
                                 format!("variable '{name}' is not defined"),

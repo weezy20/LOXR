@@ -1,4 +1,5 @@
 #![allow(unused_imports)]
+
 use crate::loc;
 use crate::parser::error::{EvalError, RuntimeError};
 use crate::parser::expressions::{AssignmentExpr, Expression};
@@ -52,21 +53,77 @@ impl Interpreter {
         // if self.is_repl_mode ? then for stmt in self.stmts[self.previous..].iter() { .. }
     }
     /// Execute a block of statements inside new environment
-    fn execute_block(
-        &self,
-        statements: &Vec<Declaration>,
-        sub_env: Rc<Environment>,
-    ) -> ValueResult {
-        // let sub_env = ;
-        for stmt in statements.iter() {}
+    fn execute_block(&self, statements: &Vec<Declaration>, env: Rc<Environment>) -> ValueResult {
+        for stmt in statements.iter() {
+            match self.execute(stmt, Rc::clone(&env)) {
+                Ok(val) => {
+                    if val != Value::Nil {
+                        println!(">> {}", val);
+                    }
+                }
+                Err(e) => {
+                    loc!();
+                    eprintln!("{} {e}", "Interpreter Error:".red());
+                }
+            };
+        }
         Ok(Value::Nil)
+    }
+    // Suggestion: Might change to a new InterpreterResult
+    fn execute(&self, stmt: &Declaration, mut rc_env: Rc<Environment>) -> ValueResult {
+        let env: &mut Environment = unsafe { Rc::get_mut_unchecked(&mut rc_env) };
+        match stmt {
+            DStmt(d) => match d {
+                Stmt::ExprStmt(x) | Stmt::Print(x) => x.eval(env),
+                Stmt::ErrStmt { message } => {
+                    loc!();
+                    eprintln!(
+                        "{}{}{message}",
+                        "Interpreter Error: ".red(),
+                        "Bad statement ".yellow()
+                    );
+                    Ok(Value::Nil)
+                }
+                Stmt::Empty => Ok(Value::Nil),
+                Stmt::Block(stmts) => self.execute_block(stmts, Rc::clone(&rc_env)),
+            },
+            Declaration::VarDecl { name, initializer } => {
+                // let init_err : Option<EvalError> = None;
+                let val = if let Some(expr) = initializer {
+                    match expr.eval(env) {
+                        Ok(v) => v,
+                        Err(eval_err) => {
+                            loc!();
+                            eprintln!("{} {eval_err}", "Interpreter Error:".red());
+                            return Err(eval_err);
+                        }
+                    }
+                } else {
+                    Value::Nil
+                };
+                println!("var {name} declared to {}", val);
+                env.define(name, val);
+                crate::loc!(format!("{:?}", self.env.values));
+                Ok(Value::Nil)
+            }
+            Declaration::ErrDecl => {
+                loc!();
+                eprintln!(
+                    "{}{}",
+                    "Interpreter Error: ".red(),
+                    "Variable declaration error".yellow()
+                );
+                Ok(Value::Nil)
+            }
+        }
+        // Ok(Value::Nil)
     }
     pub fn interpret(&mut self) -> () {
         for stmt in self.stmts[self.previous..].iter() {
             let val: ValueResult = match stmt {
                 DStmt(d) => match d {
                     Stmt::ExprStmt(e) | Stmt::Print(e) => {
-                        e.eval(Rc::get_mut(&mut self.env).expect("ICE: Failed to obtain &mut Env"))
+                        e.eval(Rc::get_mut(&mut self.env).expect("ICE: obtain &mut Env"))
                     }
                     Stmt::ErrStmt { message } => {
                         loc!();
@@ -87,9 +144,7 @@ impl Interpreter {
                 Declaration::VarDecl { name, initializer } => {
                     // let init_err : Option<EvalError> = None;
                     let val = if let Some(expr) = initializer {
-                        match expr.eval(
-                            Rc::get_mut(&mut self.env).expect("ICE: Failed to obtain &mut Env"),
-                        ) {
+                        match expr.eval(Rc::get_mut(&mut self.env).expect("ICE: obtain &mut Env")) {
                             Ok(v) => v,
                             Err(eval_err) => {
                                 loc!();
@@ -101,7 +156,9 @@ impl Interpreter {
                         Value::Nil
                     };
                     println!("var {name} declared to {}", val);
-                    Rc::get_mut(&mut self.env).expect("ICE: obtain &mut env").define(name, val);
+                    Rc::get_mut(&mut self.env)
+                        .expect("ICE: obtain &mut env")
+                        .define(name, val);
                     crate::loc!(format!("{:?}", self.env.values));
                     Ok(Value::Nil)
                 }
@@ -117,7 +174,9 @@ impl Interpreter {
             };
             match val {
                 Ok(val) => {
-                    println!(">> {}", val);
+                    if val != Value::Nil {
+                        println!(">> {}", val);
+                    }
                 }
                 Err(e) => {
                     loc!();
