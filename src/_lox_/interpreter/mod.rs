@@ -71,6 +71,8 @@ impl Interpreter {
     }
     // Suggestion: Might change to a new InterpreterResult
     fn execute(&self, stmt: &Declaration, mut rc_env: Rc<Environment>) -> ValueResult {
+        // Since our Rc is already "owned" by enclosing functions, we cannot safely deref_mut it
+        // But in a single threaded context this will be safe
         let env: &mut Environment = unsafe { Rc::get_mut_unchecked(&mut rc_env) };
         match stmt {
             DStmt(d) => match d {

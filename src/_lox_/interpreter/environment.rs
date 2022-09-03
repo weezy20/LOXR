@@ -11,6 +11,7 @@ use std::{collections::HashMap, rc::Rc};
 pub struct Environment {
     pub values: HashMap<String, Value>,
     /// Enclosing scope, for global scope it's none
+    // TODO: Refcell wraps Environment
     enclosing: Option<Rc<Environment>>,
     is_global: bool,
 }
