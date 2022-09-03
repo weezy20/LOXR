@@ -24,8 +24,8 @@ impl Default for Environment {
     }
 }
 impl Environment {
-    /// Create a new sub-environment of `enclosing`
-    pub fn new(enclosing: &Rc<Environment>) -> Self {
+    /// Create a new environment with an enclosing environment
+    pub fn new(enclosing: Rc<Environment>) -> Self {
         Self {
             // If surrounded by an environment, cannot be global
             is_global: false,
@@ -34,7 +34,17 @@ impl Environment {
         }
     }
 }
-
+impl Memory for Rc<Environment> {
+    fn define(&mut self, name: &str, value: Value) {
+        self.define(name, value)
+    }
+    fn get(&self, name: &Token) -> Result<&Value, RuntimeError> {
+        self.get(name)
+    }
+    fn put(&mut self, name: &str, value: Value) -> Result<(), RuntimeError> {
+        self.put(name, value)
+    }
+}
 impl Memory for Environment {
     fn define(&mut self, name: &str, value: Value) {
         // If previous was something, the user just used var x = _ syntax to reassign to x instead of

@@ -10,14 +10,15 @@ use crate::parser::{
 };
 use crate::tokenizer::token::Token;
 use colored::Colorize;
+use std::rc::Rc;
 mod environment;
 pub use environment::Environment;
 /// Since at this point our program is made of statements, this is perfectly fine
 #[derive(Default, Debug)]
 pub struct Interpreter {
     stmts: Vec<Declaration>,
-    // TODO: Can be made generic over environment (requires too much work)
-    env: Environment,
+    // TODO: Can be turned into Rc<Environment>
+    env: Rc<Environment>,
     // Default false
     pub(crate) repl: bool,
     // index for repl mode
@@ -49,7 +50,16 @@ impl Interpreter {
         self.interpret();
         // if self.is_repl_mode ? then for stmt in self.stmts[self.previous..].iter() { .. }
     }
-
+    /// Execute a block of statements inside new environment
+    fn execute_block(
+        &self,
+        statements: &Vec<Declaration>,
+        sub_env: Rc<Environment>,
+    ) -> ValueResult {
+        // let sub_env = ;
+        for stmt in statements.iter() {}
+        Ok(Value::Nil)
+    }
     pub fn interpret(&mut self) -> () {
         for stmt in self.stmts[self.previous..].iter() {
             let val: ValueResult = match stmt {
@@ -65,7 +75,10 @@ impl Interpreter {
                         Ok(Value::Nil)
                     }
                     Stmt::Empty => Ok(Value::Nil),
-                    Stmt::Block(_) => todo!(),
+                    Stmt::Block(scoped_stmts) => self.execute_block(
+                        scoped_stmts,
+                        Rc::new(Environment::new(Rc::clone(&self.env))),
+                    ),
                 },
                 // Declarations should produce no values
                 Declaration::VarDecl { name, initializer } => {
