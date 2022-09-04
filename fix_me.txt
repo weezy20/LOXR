@@ -1,1 +1,0 @@
-vara a = 10; results in invalid token a error.
