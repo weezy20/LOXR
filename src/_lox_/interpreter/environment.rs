@@ -106,7 +106,38 @@ impl Memory for Rc<RefCell<Environment>> {
     fn put(&mut self, name: &str, value: Value) -> Result<(), RuntimeError> {
         // put is not allowed to create new keys or variable definitions, it can only update existing ones
         if !self.borrow().values.contains_key(name) {
-            Err(RuntimeError::UndefinedVar(name.to_owned()))
+            let current_env: Rc<RefCell<Environment>> = Rc::clone(&self);
+            loop {
+                if let Some(ref encl_env) = current_env.borrow().enclosing {
+                    if encl_env.borrow().values.contains_key(name) {
+                        encl_env.borrow_mut().values.insert(name.to_owned(), value);
+                        return Ok(());
+                    } else {
+                        current_env.swap(encl_env);
+                        continue;
+                    }
+                }
+                // No enclosing environment, current_env is global env
+                // Upto this we have not found the var declared
+                else {
+                    assert!(
+                        current_env.borrow().is_global,
+                        "ICE: Current env expected to be global at this point"
+                    );
+
+                    match current_env.borrow().values.contains_key(name) {
+                        true => {
+                            current_env
+                                .borrow_mut()
+                                .values
+                                .insert(name.to_owned(), value);
+                            return Ok(());
+                        }
+                        false => return Err(RuntimeError::UndefinedVar(name.to_owned())),
+                    }
+                }
+            }
+            // Err(RuntimeError::UndefinedVar(name.to_owned()))
         } else {
             self.borrow_mut().values.insert(name.to_owned(), value);
             Ok(())
