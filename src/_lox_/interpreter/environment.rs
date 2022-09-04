@@ -9,7 +9,7 @@ use std::{
     rc::Rc,
 };
 
-/// Construct the global environment with default
+/// An environment for executing exprStmts 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Environment {
     pub values: HashMap<String, Value>,
@@ -93,12 +93,6 @@ impl Memory for Rc<RefCell<Environment>> {
                     }
                 } // Loop ends at current_env = global scope
                 return Ok(scoped_val);
-                // This code is unreachable but exists to make the compiler happy
-                // eprintln!("This should never print!");
-                // Err(RuntimeError::UncaughtReference(
-                //     token.clone(),
-                //     format!("variable '{name}' is not defined"),
-                // ))
             }
         }
     }

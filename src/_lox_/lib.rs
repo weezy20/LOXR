@@ -1,9 +1,46 @@
 #![feature(let_chains)]
 #![feature(box_syntax)]
-#![feature(get_mut_unchecked)]
-// #![forbid(unsafe_code)] // todo
+#![forbid(unsafe_code)]
+//! This module contains all definitions for the Lox interpreter
+//! # Lox grammer: 
+//! *program*          → `declaration`* EOF;
+//! 
+//! *declaration*      → `variableDecl` | statement;
+//! 
+//! *variableDecl*     → `"var" IDENTIFIER ("=" expression)? ";"` ;
+//! 
+//! *statement*        → `exprStmt` | `printStmt` | `block` | `ifStmt` ;
+//! 
+//! *exprStmt*         → `expression` ";" ;
+//! 
+//! *printStmt*        → print `expression` ";" ;
+//! 
+//! *block*            → `"{" (declaration)* "}"` ;
+//! 
+//! *ifStmt*           → `"if" "(" expression ")"  statement ("else" statement)?` ;
+//! 
+//! A comma expression evaluates to the final expression
+//! 
+//! *comma expr*     → `expression , (expression)* | "(" expression ")"`;
+//!
+//! *ternary*        → `expression` ? `expression` : `expression`;
+//!
+//! *expression*     → `literal
+//!                  | unary
+//!                  | binary
+//!                  | grouping ;`
+//!
+//! *literal*        → `NUMBER | STRING | "true" | "false" | "nil" ;`
+//!
+//! *grouping*       → `"(" expression ")" ;`
+//!
+//! *unary*          → `( "-" | "!" ) expression ;`
+//!
+//! *binary*         → `expression operator expression ;`
+//!
+//! *operator*       → `"==" | "!=" | "<" | "<=" | ">" | ">="
+//!                  | "+"  | "-"  | "*" | "/" | "%";`
 
-//! This module contains all definitions for the Lox compiler and Lox interpreter
 mod tests;
 
 /// ## A module for token definitions, and a lox lexer and scanner

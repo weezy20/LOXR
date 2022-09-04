@@ -15,7 +15,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 mod environment;
 pub use environment::Environment;
-/// Since at this point our program is made of statements, this is perfectly fine
+
 #[derive(Default, Debug)]
 pub struct Interpreter {
     stmts: Vec<Declaration>,

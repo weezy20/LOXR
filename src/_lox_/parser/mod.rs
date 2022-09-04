@@ -6,9 +6,11 @@
 //! We may declare a variable or declare and assign the result of some expression to it
 //! variableDecl     → "var" IDENTIFIER ("=" expression)? ";" ;
 //! 
-//! statement        → `exprStmt` | printStmt ;
+//! statement        → `exprStmt` | printStmt | block | ifstmt ;
 //! exprStmt         → `expression` ";" ;
 //! printStmt        → print `expression` ";" ;
+//! block            → "{" declaration* "}" ;
+//! ifStmt           → "if" "(" expression ")"  statement ("else" statement)? ;
 //! 
 //! A comma expression evaluates to the final expression
 //! *comma expr*     → `expression , (expression)* | "(" expression ")"`;
