@@ -1,0 +1,10 @@
+var b;
+var a = 4 < 5 ? b = 5 : -10; // a = b = 5
+print b ; // 5
+print b = 15; // 15
+var a = !(b = 4) ? 4: "oops"; // "oops"
+var a = !(b = 4) ? 4: b = 5; //  a == b == 5,
+var c;
+var x;
+c = 4 < 100? x= 1 : x=100; // 1 
+c = 4 > 100? x= 1 : x=100; // 100

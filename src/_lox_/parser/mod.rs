@@ -13,15 +13,13 @@
 //! ifStmt           → "if" "(" expression ")"  statement ("else" statement)? ;
 //! 
 //! A comma expression evaluates to the final expression
-//! *comma expr*     → `expression , (expression)* | "(" expression ")"`;
+//! *comma expr*  → `expression , (expression)* | "(" expression ")"`;
 //!
-//! *ternary*        → `expression` ? `expression` : `expression`;
-//!
-//! *expression*  → `assignment`;
+//! *expression*  → `ternary`;
 //! 
-//! *assignment*  → `ternary` | IDENTIFIER "=" `assignment`
+//! *ternary*     → `assignment` | `assignment` ? `assignment` : `assignment`;
 //! 
-//! *ternary*     → `logic_or` | `logic_or` ? : `logic_or`;
+//! *assignment*  → `logic_or` | IDENTIFIER "=" `ternary`
 //! 
 //! *logic_or*    → `logic_and` ( "or" `logic_and`)* ;
 //! 
@@ -117,12 +115,31 @@ impl Parser {
             Ok(expr_list.pop().unwrap())
         }
     }
-    /// *expression*  → `equality`
+    /// *expression*  → `ternary`
     pub fn expression(&mut self) -> Result<Box<Expression>, ParserError> {
-        self.assignment()
+        self.ternary()
     }
-    /// *assignment*  → `ternary` | IDENTIFIER "=" assignment
-    /// TODO : FIX
+    /// *ternary* → `assignment` | `assignment` ? `assignment` : `assignment`;
+    pub fn ternary(&mut self) -> Result<Box<Expression>, ParserError> {
+        let conditional_expr = self.assignment()?;
+        while self.matches(&[TERNARYC]) {
+            let left_expr = self.assignment()?;
+            while self.matches(&[TERNARYE]) {
+                let right_expr = self.assignment()?;
+                return Ok(Box::new(Expression::TernExpr(TernaryExpr {
+                    condition: conditional_expr,
+                    if_true: left_expr,
+                    if_false: right_expr,
+                })));
+            } 
+            let prev = self.previous.clone().expect("Matches will ensure something here");
+            Lox::report_syntax_err(prev.ln, prev.col, "Invalid Ternary expression".into());
+            return Err(ParserError::ExpectedExpression);
+        
+        }
+        Ok(conditional_expr)
+    }
+    /// *assignment*  → `logic_or` | IDENTIFIER "=" ternary
     pub fn assignment(&mut self) -> Result<Box<Expression>, ParserError> {
         // `a = "value";` This is a deviation from the standard way of parsing exprs until now
         // where we would parse everything as an rval expression; we would match on the operator 
@@ -134,7 +151,7 @@ impl Parser {
         // Where assignment characteristic token `=` occurs after parsing multiple tokens like (), . , multiple idents etc.
         // therefore our strategy is to parse as an expression, until we get to a `=` symbol after which we start parsing the 
         // right as an rval and try an assignment operation. We use the lval as a storage location, if not, it's a parserError
-        let expression : Box<Expression> = self.ternary()?;
+        let expression : Box<Expression> = self.or()?;
         if self.matches(&[EQUAL]) {
             // Since this is entered on variable assignment renaming helps 
             // Since we have both if/else returns, we don't worry about moving into lval
@@ -143,7 +160,7 @@ impl Parser {
                 .previous
                 .take()
                 .expect("matches will ensure this field to be something");
-            let rval: Box<Expression> = self.assignment()?; // allows for b = a = 2 which means a -> 2 and b -> 2
+            let rval: Box<Expression> = self.ternary()?; // allows for b = a = 2 which means a -> 2 and b -> 2
             // ensure lval is a Expression::Variable(_) and not something else : 
             if let Expression::Variable(ref t) = *lval {
                 return Ok (
@@ -158,26 +175,6 @@ impl Parser {
             }
         }
         Ok(expression)
-    }
-    /// *ternary*     → `logic_or` | `logic_or` ? : `logic_or`;
-    pub fn ternary(&mut self) -> Result<Box<Expression>, ParserError> {
-        let conditional_expr = self.or()?;
-        while self.matches(&[TERNARYC]) {
-            let left_expr = self.or()?;
-            while self.matches(&[TERNARYE]) {
-                let right_expr = self.expression()?;
-                return Ok(Box::new(Expression::TernExpr(TernaryExpr {
-                    condition: conditional_expr,
-                    if_true: left_expr,
-                    if_false: right_expr,
-                })));
-            } 
-            let prev = self.previous.clone().expect("Matches will ensure something here");
-            Lox::report_syntax_err(prev.ln, prev.col, "Invalid Ternary expression".into());
-            return Err(ParserError::ExpectedExpression);
-        
-        }
-        Ok(conditional_expr)
     }
     /// *logic_or*    → `logic_and` ( "or" `logic_and`)* ;
     pub fn or(&mut self) -> Result<Box<Expression>, ParserError> {
@@ -525,7 +522,7 @@ impl Parser {
             match self.var_declaration() {
                 Ok(d) => d,
                 Err(err) => { 
-                    loc!(format!("Declaration parsing error : {}{}","Parser Error".bright_cyan(), err));
+                    loc!(format!("Declaration parsing error : {}{}","Parser Error ".bright_cyan(), err));
                     let d = err.into(); // to leverage type inference for the following macro
                     loc!(d);
                     d // due to this rust can infer the type and use it in the above macro

@@ -1,0 +1,11 @@
+if (1 < 2 ? true : false) {
+    print "Math holds true";
+}
+else {
+    print "Oops";
+}
+
+if (true) var a ; {
+    a = "nested scoped variable";
+}
+print "this is a " + a;

@@ -125,7 +125,7 @@ impl Interpreter {
                 };
                 println!("var {name} declared to {}", val);
                 rc_env.define(name, val);
-                crate::loc!(format!("{:?}", self.env.values));
+                crate::loc!(format!("{:?}", self.env.borrow().values));
                 Ok(Value::Nil)
             }
             Declaration::ErrDecl => {
@@ -185,7 +185,7 @@ impl Interpreter {
                     };
                     println!("var {name} declared to {}", val);
                     self.env.define(name, val);
-                    crate::loc!(format!("{:?}", self.env.values));
+                    crate::loc!(format!("{:?}", self.env.borrow().values));
                     Ok(Value::Nil)
                 }
                 Declaration::ErrDecl => {
