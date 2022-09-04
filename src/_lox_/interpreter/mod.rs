@@ -95,6 +95,19 @@ impl Interpreter {
                     stmts,
                     Rc::new(RefCell::new(Environment::new(Rc::clone(&rc_env)))),
                 ),
+                Stmt::IfStmt {
+                    condition,
+                    then_,
+                    else_,
+                } => {
+                    let condition_value = condition.eval(&mut Rc::clone(&rc_env))?;
+                    if condition_value.is_truthy() {
+                        self.execute(then_.as_ref(), Rc::clone(&rc_env))?;
+                    } else if let Some(else_) = else_ {
+                        self.execute(else_.as_ref(), Rc::clone(&rc_env))?;
+                    }
+                    Ok(Value::Nil)
+                }
             },
             Declaration::VarDecl { name, initializer } => {
                 // let init_err : Option<EvalError> = None;
@@ -145,8 +158,14 @@ impl Interpreter {
                         Ok(Value::Nil)
                     }
                     Stmt::Empty => Ok(Value::Nil),
-                    Stmt::Block(scoped_stmts) => {
-                        self.execute_block(scoped_stmts, Rc::new(RefCell::new(Environment::new(Rc::clone(&self.env)))))
+                    Stmt::Block(scoped_stmts) => self.execute_block(
+                        scoped_stmts,
+                        Rc::new(RefCell::new(Environment::new(Rc::clone(&self.env)))),
+                    ),
+                    // fancy @ syntax
+                    ifstmt @ Stmt::IfStmt { condition: _, then_: _, else_: _ } => {
+                        // This clone should remind you to use Rc for everything nextime 
+                        self.execute(&Declaration::DStmt(ifstmt.clone()), Rc::clone(&self.env))
                     }
                 },
                 // Declarations should produce no values

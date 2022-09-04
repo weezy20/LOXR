@@ -547,6 +547,9 @@ impl Parser {
         } else if self.matches(&[LEFT_BRACE]) {
             self.block_statement()
         }
+        else if self.matches(&[IF]){
+            self.if_statement()
+        }
         else {
             self.expression_statement()
         };
@@ -557,6 +560,19 @@ impl Parser {
                 err.into()
             },
         }
+    }
+    fn if_statement(&mut self) -> Result<Stmt, ParserError> {
+        self.consume(LEFT_PAREN)?;
+        let condition = self.expression()?;
+        self.consume(RIGHT_PAREN)?;
+        let then_ = box self.declaration();
+        let mut else_ = None;
+        // This `else` is bound to the nearest if statement
+        if self.matches(&[ELSE]) {
+            else_ = Some(box self.declaration());
+        }
+        Ok(Stmt::IfStmt { condition, then_, else_ })
+
     }
     // We are not making use of Err(ParserError) yet, and just return Ok(ErrStmt) instead
     fn print_statement(&mut self) -> Result<Stmt, ParserError> {

@@ -1,6 +1,6 @@
 use super::*;
 use derive_more::{Display, From};
-#[derive(Debug, Display)]
+#[derive(Debug, Display, Clone)]
 /// A statement has side effects that may affect the `state` a lox program is in
 /// A statement is always followed by a `;`.
 /// A lox program is made up of lox statements
@@ -20,11 +20,25 @@ pub enum Stmt {
     /// Block scopes
     #[display(fmt = "BlockStmt [{:?}]", "_0")]
     Block(Vec<Declaration>),
+    /// If statement
+    #[display(
+        fmt = "IfStmt Condition : {} Then : {} {}",
+        condition,
+        then_,
+        r#"if let Some(e) = else_ {
+        format!("Else: {}", *e)
+    } else { "".to_string() }"#
+    )]
+    IfStmt {
+        condition: Box<Expression>,
+        then_: Box<Declaration>,
+        else_: Option<Box<Declaration>>,
+    },
 }
 
 /// Since var decls don't make sense every where we wrap Stmt inside Declaration such that any place
 /// that cannot accept a declaration can still accept a statement
-#[derive(Debug, Display, From)]
+#[derive(Debug, Display, From, Clone)]
 pub enum Declaration {
     #[display(fmt = "Statment '{}'", _0)]
     DStmt(Stmt),
