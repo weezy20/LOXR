@@ -1,6 +1,8 @@
 #![allow(unused, warnings)]
 #![cfg(test)]
+use crate::parser::value::Value;
 use std::cell::RefCell;
+use crate::interpreter::Environment;
 use std::rc::Rc;
 use crate::parser::Parser;
 use crate::tokenizer::scanner::*;
@@ -111,6 +113,7 @@ adsadasdasdasd
 mod parser_tests {
     use super::*;
     use crate::parser::error::ParserError;
+    use crate::parser::traits::evaluate::Evaluate;
     use crate::parser::traits::printer::ExpressionPrinter;
     use crate::setup_lox;
     use crate::tokenizer::token::Token;
@@ -190,7 +193,6 @@ mod parser_tests {
         println!("{:?}", res);
         assert!(res.is_ok());
     }
-    // #[ignore = "stack overflow"]
     #[test]
     fn check_nested_ternary_expression() {
         let tokens = setup_lox!("4 == 5? 1 < 2 ? 44 < 55 ? 1 : 0 : -1 : -2");
@@ -198,13 +200,34 @@ mod parser_tests {
         println!("4 == 5? 1 < 2 ? 44 < 55 ? 1 : 0 : -1 : -2 -> \n{:?}", res);
         assert!(res.is_ok());
     }
+    #[test]
+    fn check_nested_ternary_expression1() {
+        let tokens = setup_lox!("4 == 5? 1 < 2 ? 1 : 2 : 3;");
+        let mut env = Rc::new(RefCell::new(Environment::default()));
+        let res = Parser::new(tokens).run();
+        assert!(res.is_ok());
+        let res = res.unwrap().eval(&mut env).unwrap();
+        assert_eq!(Value::Double(3.0), res);
+        println!("{:#?}", res);
+    }
 
     #[test]
     fn check_nested_ternary_expression2() {
         let tokens = setup_lox!("4 == 5? 1 < 2 ? 1 : 2 : 3");
-        let res = Parser::new(tokens).run();
+        let mut env = Rc::new(RefCell::new(Environment::default()));
+        let res = Parser::new(tokens).run().unwrap().eval(&mut env).unwrap();
         println!("4 == 5? 1 < 2 ? 1 : 2 : 3 -> \n{:?}", res);
-        assert!(res.is_ok());
+        assert_eq!(res, Value::Double(3.0));
+    }
+    #[test]
+    fn check_nested_ternary_expression3() {
+        let tokens = setup_lox!("var a; var b; var c; var d; var e; a = !(b = 2) ? c = 2 : d = !(e = 3) ? 100 : 1000;");
+        let mut env = Rc::new(RefCell::new(Environment::default()));
+        let expr = Parser::new(tokens).run();
+        println!("{expr:?}");
+        let res = expr.unwrap().eval(&mut env).unwrap();
+        println!("var a = !(b = 2) ? c = 2 : d = !(e = 3) ? 100 : 1000; -> \n{:?}", res);
+        assert_eq!(res, Value::Double(1000.0));
     }
     #[test]
     /// Missing left operand. This should trigger a synchronization and pick up parsing from 10+11==12
@@ -291,12 +314,6 @@ mod parser_evaluator {
         let tokens = setup_lox!("1+3+4*((3+4))");
         let res = Parser::new(tokens).run().unwrap().eval(&mut env);
         assert!(res.is_ok());
-        // println!("{:#?}", res);
-        // Ternary expression
-        let tokens = setup_lox!("4 == 5? 1 < 2 ? 1 : 2 : 3;");
-        let res = Parser::new(tokens).run().unwrap().eval(&mut env);
-        assert!(res.is_ok());
-        println!("{:#?}", res);
     }
 }
 

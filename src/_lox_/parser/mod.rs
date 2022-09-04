@@ -121,20 +121,23 @@ impl Parser {
     /// In C, the ternary conditional operator has higher precedence than assignment operators.
     pub fn ternary(&mut self) -> Result<Box<Expression>, ParserError> {
         let conditional_expr = self.assignment()?;
-        while self.matches(&[TERNARYC]) {
-            let left_expr = self.assignment()?;
-            while self.matches(&[TERNARYE]) {
-                let right_expr = self.assignment()?;
-                return Ok(Box::new(Expression::TernExpr(TernaryExpr {
+        loc!(format!("ternary here with condition/left -> {conditional_expr}"));
+        if self.matches(&[TERNARYC]) {
+            let left_expr = self.expression()?;
+            loc!(format!("ternary here with left -> {left_expr}"));
+            if self.matches(&[TERNARYE]) {
+                let right_expr = self.expression()?;
+                loc!(format!("ternary here with right -> {right_expr}"));
+                let t = Expression::TernExpr(TernaryExpr {
                     condition: conditional_expr,
                     if_true: left_expr,
                     if_false: right_expr,
-                })));
-            } 
-            // let prev = self.previous.clone().expect("Matches will ensure something here");
-            // Lox::report_syntax_err(prev.ln, prev.col, "Invalid Ternary expression".into());
+                });
+                loc!(format!("Ternary formed -> {t}"));
+                return Ok(Box::new(t));
+            } // match TERNARYE
             return Err(ParserError::ExpectedExpression);
-        }
+        } // match TERNARYC
         Ok(conditional_expr)
     }
     /// *assignment*  → `logic_or` | IDENTIFIER "=" ternary
@@ -158,7 +161,7 @@ impl Parser {
                 .previous
                 .take()
                 .expect("matches will ensure this field to be something");
-            let rval: Box<Expression> = self.ternary()?; // allows for b = a = 2 which means a -> 2 and b -> 2
+            let rval: Box<Expression> = self.expression()?; // allows for b = a = 2 which means a -> 2 and b -> 2
             // ensure lval is a Expression::Variable(_) and not something else : 
             if let Expression::Variable(ref t) = *lval {
                 return Ok (

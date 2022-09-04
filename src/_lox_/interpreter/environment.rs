@@ -3,11 +3,7 @@ use crate::{
     parser::{error::RuntimeError, value::Value},
     tokenizer::token::Token,
 };
-use std::{
-    cell::{Ref, RefCell},
-    collections::HashMap,
-    rc::Rc,
-};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 /// An environment for executing [Statements](crate::parser::statement::Declaration)s
 #[derive(Debug, Clone, PartialEq)]
