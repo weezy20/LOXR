@@ -1,5 +1,5 @@
 use super::*;
-use derive_more::{Display, From};
+use derive_more::Display;
 #[derive(Debug, Display, Clone)]
 /// A statement has side effects that may affect the `state` a lox program is in
 /// A statement is always followed by a `;`.
@@ -19,7 +19,7 @@ pub enum Stmt {
     Empty,
     /// Block scopes
     #[display(fmt = "BlockStmt [{:?}]", "_0")]
-    Block(Vec<Declaration>),
+    Block(Vec<Stmt>),
     /// If statement
     #[display(
         fmt = "IfStmt Condition : {} Then : {} {}",
@@ -31,25 +31,14 @@ pub enum Stmt {
     )]
     IfStmt {
         condition: Box<Expression>,
-        then_: Box<Declaration>,
-        else_: Option<Box<Declaration>>,
+        then_: Box<Stmt>,
+        else_: Option<Box<Stmt>>,
     },
-}
-
-/// As it turns out, it would've been better to put `Declaration` inside [`Stmt`](Stmt) as `Stmt::Declaration` but we stick with this for now
-#[derive(Debug, Display, From, Clone)]
-pub enum Declaration {
-    #[display(fmt = "Statment '{}'", _0)]
-    DStmt(Stmt),
-    /// var go = "programming language by Google";
     #[display(fmt = "VarDecl IDENTIFER : '{}', Expression : {:?}", name, initializer)]
     VarDecl {
         name: String,
         initializer: Option<Box<Expression>>,
     },
-    /// Represents an Error, should be evaluated to Nil
-    #[display(fmt = "Error Declaration/Statement")]
-    ErrDecl,
 }
 
 // Since we are using Ok(ErrStmt) instead of Err(ParserError) at some stages : expression_statement and print_statement
@@ -59,11 +48,5 @@ impl From<ParserError> for Stmt {
         Stmt::ErrStmt {
             message: format!("{perr}"),
         }
-    }
-}
-
-impl From<ParserError> for Declaration {
-    fn from(_perr: ParserError) -> Self {
-        Self::ErrDecl
     }
 }

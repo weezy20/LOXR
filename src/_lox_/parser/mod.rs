@@ -1,12 +1,10 @@
 //! Parser grammar:
-//! program          → `declaration`* EOF;
-//! 
-//! declaration      → `variableDecl` | statement;
+//! program          → `statements`* EOF;
 //! 
 //! We may declare a variable or declare and assign the result of some expression to it
 //! variableDecl     → "var" IDENTIFIER ("=" expression)? ";" ;
 //! 
-//! statement        → `exprStmt` | printStmt | block | ifstmt ;
+//! statement        → `variableDecl`| `exprStmt` | printStmt | block | ifstmt ;
 //! exprStmt         → `expression` ";" ;
 //! printStmt        → print `expression` ";" ;
 //! block            → "{" declaration* "}" ;
@@ -69,7 +67,7 @@ use better_peekable::{BPeekable, BetterPeekable};
 use expressions::Expression;
 use std::vec::IntoIter;
 use self::error::ParserError;
-use self::statement::{Stmt, Declaration};
+use self::statement::Stmt;
 
 use crate::Lox;
 /// ParserError
@@ -501,10 +499,10 @@ impl Parser {
     pub fn run(&mut self) -> Result<Box<Expression>, ParserError> {
         self.parse_expression()
     }
-    pub fn parse(&mut self) -> Vec<Declaration> {
+    pub fn parse(&mut self) -> Vec<Stmt> {
         let mut stmts = vec![];
         while !self.is_at_end() {
-            stmts.push(self.declaration());
+            stmts.push(self.collect());
             // BUG_FIXED: If var ? or an ErrDecl is returned, this loop never ends
             // BUG_FIXED: Doesn't synchronize on multiline comments
             // BUG_FIXED : Infinte loop on char
@@ -514,7 +512,7 @@ impl Parser {
     }
     // TODO: Transform all statement methods to return a Result
     /// Parse as a variable declaration or else a statment
-    fn declaration(&mut self) -> Declaration {
+    fn collect(&mut self) -> Stmt {
         // When panic, call self.synchronize()
         // Declarations can be either a VarDecl or a normal Statement, 
         // we decide that here: 
@@ -532,7 +530,7 @@ impl Parser {
             self.statement().into()
         }
     }
-    fn var_declaration(&mut self) -> Result<Declaration, ParserError> {
+    fn var_declaration(&mut self) -> Result<Stmt, ParserError> {
         if self.matches(&[IDENTIFIER])  {
             let name_token = self.previous.take().expect("matches is infallible");
             let name = name_token.lexeme;
@@ -541,12 +539,12 @@ impl Parser {
                 let initializer = self.expression()?;
                 self.consume(SEMICOLON)?;
                 let _equal = self.previous.take().expect("Safe to unwrap here");                
-                Ok(Declaration::VarDecl{ name, initializer: Some(initializer) })
+                Ok(Stmt::VarDecl{ name, initializer: Some(initializer) })
             } 
             // Variable declaration without initialization
             else {
                 self.consume(SEMICOLON)?;
-                Ok(Declaration::VarDecl{ name, initializer: None })
+                Ok(Stmt::VarDecl{ name, initializer: None })
             }
         }   
         else {
@@ -582,11 +580,11 @@ impl Parser {
         self.consume(LEFT_PAREN)?;
         let condition = self.expression()?;
         self.consume(RIGHT_PAREN)?;
-        let then_ = box self.declaration();
+        let then_ = box self.collect();
         let mut else_ = None;
         // This `else` is bound to the nearest if statement
         if self.matches(&[ELSE]) {
-            else_ = Some(box self.declaration());
+            else_ = Some(box self.collect());
         }
         Ok(Stmt::IfStmt { condition, then_, else_ })
 
@@ -608,10 +606,10 @@ impl Parser {
     fn block_statement(&mut self) -> Result<Stmt, ParserError> {     
         Ok(Stmt::Block(self.block()?))
     }
-    fn block(&mut self) -> Result<Vec<Declaration>, ParserError> {
-        let mut block_stmts: Vec<Declaration> = vec![];
+    fn block(&mut self) -> Result<Vec<Stmt>, ParserError> {
+        let mut block_stmts: Vec<Stmt> = vec![];
         while let Some(x) = self.peek() && x.r#type != RIGHT_BRACE && !self.is_at_end() {
-            block_stmts.push(self.declaration());
+            block_stmts.push(self.collect());
         } 
         self.consume(RIGHT_BRACE)?;
         loc!("Block parsed successfully");
