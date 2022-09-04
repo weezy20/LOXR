@@ -118,6 +118,7 @@ impl Parser {
         self.ternary()
     }
     /// *ternary* → `assignment` | `assignment` ? `assignment` : `assignment`;
+    /// In C, the ternary conditional operator has higher precedence than assignment operators.
     pub fn ternary(&mut self) -> Result<Box<Expression>, ParserError> {
         let conditional_expr = self.assignment()?;
         while self.matches(&[TERNARYC]) {
@@ -130,10 +131,9 @@ impl Parser {
                     if_false: right_expr,
                 })));
             } 
-            let prev = self.previous.clone().expect("Matches will ensure something here");
-            Lox::report_syntax_err(prev.ln, prev.col, "Invalid Ternary expression".into());
+            // let prev = self.previous.clone().expect("Matches will ensure something here");
+            // Lox::report_syntax_err(prev.ln, prev.col, "Invalid Ternary expression".into());
             return Err(ParserError::ExpectedExpression);
-        
         }
         Ok(conditional_expr)
     }
