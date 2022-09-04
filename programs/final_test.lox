@@ -61,19 +61,19 @@ print "";
 print "while loop";
 print "";
 var cnt = 2;
-while (cnt > 0) {
-    cnt = cnt - 1;
-    print "loop!";
-}
+// while (cnt > 0) {
+//     cnt = cnt - 1;
+//     print "loop!";
+// }
 
 print "";
 print "for loop";
 print "";
-for (var i = 0; i < 2; i = i + 1) {
-    print "loop!";
-}
+// for (var i = 0; i < 2; i = i + 1) {
+//     print "loop!";
+// }
 
 print "";
 print "clock function";
 print "";
-print clock();
+// print clock();

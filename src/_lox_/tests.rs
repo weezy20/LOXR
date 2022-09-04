@@ -1,5 +1,7 @@
 #![allow(unused, warnings)]
 #![cfg(test)]
+use std::cell::RefCell;
+use std::rc::Rc;
 use crate::parser::Parser;
 use crate::tokenizer::scanner::*;
 use crate::Lox;
@@ -110,8 +112,8 @@ mod parser_tests {
     use super::*;
     use crate::parser::error::ParserError;
     use crate::parser::traits::printer::ExpressionPrinter;
-    use crate::tokenizer::token::Token;
     use crate::setup_lox;
+    use crate::tokenizer::token::Token;
     #[test]
     fn term_expression() {
         let source = String::from("4 +10.123");
@@ -185,7 +187,7 @@ mod parser_tests {
     fn check_ternary_expression() {
         let tokens = setup_lox!("4 == 5? 1 : 0");
         let res = Parser::new(tokens).run();
-        println!("{:#?}", res);
+        println!("{:?}", res);
         assert!(res.is_ok());
     }
     // #[ignore = "stack overflow"]
@@ -193,7 +195,7 @@ mod parser_tests {
     fn check_nested_ternary_expression() {
         let tokens = setup_lox!("4 == 5? 1 < 2 ? 44 < 55 ? 1 : 0 : -1 : -2");
         let res = Parser::new(tokens).run();
-        println!("4 == 5? 1 < 2 ? 44 < 55 ? 1 : 0 : -1 : -2 -> \n{:#?}", res);
+        println!("4 == 5? 1 < 2 ? 44 < 55 ? 1 : 0 : -1 : -2 -> \n{:?}", res);
         assert!(res.is_ok());
     }
 
@@ -201,7 +203,7 @@ mod parser_tests {
     fn check_nested_ternary_expression2() {
         let tokens = setup_lox!("4 == 5? 1 < 2 ? 1 : 2 : 3");
         let res = Parser::new(tokens).run();
-        println!("4 == 5? 1 < 2 ? 1 : 2 : 3 -> \n{:#?}", res);
+        println!("4 == 5? 1 < 2 ? 1 : 2 : 3 -> \n{:?}", res);
         assert!(res.is_ok());
     }
     #[test]
@@ -262,7 +264,7 @@ mod parser_tests {
     #[ignore = "FIX ME: Write a better test"]
     #[test]
     fn assignment() {
-        let mut env = crate::interpreter::Environment::default();
+        let mut env = Rc::new(RefCell::new(crate::interpreter::Environment::default()));
         let tokens = setup_lox!("a=1+3+4(3+4)");
         let tokens = setup_lox!("a=-1+3+4(3+4)");
         let res = Parser::new(tokens).run();
@@ -279,21 +281,19 @@ mod parser_tests {
     }
 }
 
-
 mod parser_evaluator {
-    use crate::{setup_lox, parser::traits::evaluate::Evaluate};
+
     use super::*;
+    use crate::{parser::traits::evaluate::Evaluate, setup_lox};
     #[test]
-    fn simple_eval()
-    {
-        let mut env = crate::interpreter::Environment::default();
-        // Arithmetic
-        let tokens = setup_lox!("1+3+4*((3+4))"); 
+    fn simple_eval() {
+        let mut env = Rc::new(RefCell::new(crate::interpreter::Environment::default())); // Arithmetic
+        let tokens = setup_lox!("1+3+4*((3+4))");
         let res = Parser::new(tokens).run().unwrap().eval(&mut env);
         assert!(res.is_ok());
         // println!("{:#?}", res);
         // Ternary expression
-        let tokens = setup_lox!("4 == 5? 1 < 2 ? 1 : 2 : 3");
+        let tokens = setup_lox!("4 == 5? 1 < 2 ? 1 : 2 : 3;");
         let res = Parser::new(tokens).run().unwrap().eval(&mut env);
         assert!(res.is_ok());
         println!("{:#?}", res);
