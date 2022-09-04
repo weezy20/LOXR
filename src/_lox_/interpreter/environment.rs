@@ -9,7 +9,7 @@ use std::{
     rc::Rc,
 };
 
-/// An environment for executing exprStmts 
+/// An environment for executing [Statements](crate::parser::statement::Declaration)s
 #[derive(Debug, Clone, PartialEq)]
 pub struct Environment {
     pub values: HashMap<String, Value>,

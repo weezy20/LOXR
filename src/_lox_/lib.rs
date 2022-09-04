@@ -2,42 +2,43 @@
 #![feature(box_syntax)]
 #![forbid(unsafe_code)]
 //! This module contains all definitions for the Lox interpreter
-//! # Lox grammer: 
+//! # Lox grammer:
 //! *program*          → `declaration`* EOF;
-//! 
+//!
 //! *declaration*      → `variableDecl` | statement;
-//! 
+//!
 //! *variableDecl*     → `"var" IDENTIFIER ("=" expression)? ";"` ;
-//! 
+//!
 //! *statement*        → `exprStmt` | `printStmt` | `block` | `ifStmt` ;
-//! 
+//!
 //! *exprStmt*         → `expression` ";" ;
-//! 
+//!
 //! *printStmt*        → print `expression` ";" ;
-//! 
+//!
 //! *block*            → `"{" (declaration)* "}"` ;
-//! 
+//!
 //! *ifStmt*           → `"if" "(" expression ")"  statement ("else" statement)?` ;
-//! 
+//!
 //! A comma expression evaluates to the final expression
-//! 
-//! *comma expr*     → `expression , (expression)* | "(" expression ")"`;
 //!
-//! *ternary*        → `expression` ? `expression` : `expression`;
+//! *comma expr*  → `expression , (expression)* | "(" expression ")"`;
 //!
-//! *expression*     → `assignment
+//! *expression*     → `ternary
 //!                   | literal
 //!                   | unary
 //!                   | binary
 //!                   | grouping ;`
 //!
-//! *assignment*  → `ternary` | IDENTIFIER "=" `assignment`
-//! 
-//! *ternary*     → `logic_or` | `logic_or` ? : `logic_or`;
-//! 
+//!
+//! *expression*  → `ternary`;
+//!
+//! *ternary*     → `assignment` | `assignment` ? `assignment` : `assignment`;
+//!
+//! *assignment*  → `logic_or` | IDENTIFIER "=" `ternary`
+//!
 //! *logic_or*    → `logic_and` ( "or" `logic_and`)* ;
-//! 
-//! *logic_and*   → `equality` ("and" `equality`)* ; 
+//!
+//! *logic_and*   → `equality` ("and" `equality`)* ;
 //!
 //! *equality*    → `comparsion ("==" | "!=" comparison)*;`
 //!
@@ -50,7 +51,7 @@
 //! *unary*       → `("-" | "!") unary | primary;`
 //!
 //! *primary*     → `literal | identifier | "(" expression ")";`
-
+//!
 //! *literal*        → `NUMBER | STRING | "true" | "false" | "nil" ;`
 //!
 //! *grouping*       → `"(" expression ")" ;`
@@ -157,7 +158,7 @@ impl Lox {
         self.repl_interpreter.repl = true;
         self.repl_interpreter.extend(parser);
         // let mut interpreter = Interpreter::new_parser(interpreter, parser);
-        // self.repl_interpreter.interpret(); // This will run the entire interpreter 
+        // self.repl_interpreter.interpret(); // This will run the entire interpreter
         return;
     }
 }

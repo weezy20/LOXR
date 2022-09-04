@@ -36,8 +36,7 @@ pub enum Stmt {
     },
 }
 
-/// Since var decls don't make sense every where we wrap Stmt inside Declaration such that any place
-/// that cannot accept a declaration can still accept a statement
+/// As it turns out, it would've been better to put `Declaration` inside [`Stmt`](Stmt) as `Stmt::Declaration` but we stick with this for now
 #[derive(Debug, Display, From, Clone)]
 pub enum Declaration {
     #[display(fmt = "Statment '{}'", _0)]

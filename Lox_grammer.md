@@ -1,7 +1,7 @@
- # Lox grammar: 
+ # Lox grammer: 
  *program*          → `declaration`* EOF;
  
- *declaration*      → `variableDecl` | `statement`;
+ *declaration*      → `variableDecl` | statement;
  
  *variableDecl*     → `"var" IDENTIFIER ("=" expression)? ";"` ;
  
@@ -17,15 +17,37 @@
  
  A comma expression evaluates to the final expression
  
- *comma expr*     → `expression , (expression)* | "(" expression ")"`;
+ *comma expr*  → `expression , (expression)* | "(" expression ")"`;
 
- *ternary*        → `expression` ? `expression` : `expression`;
+ *expression*     → `ternary
+                   | literal
+                   | unary
+                   | binary
+                   | grouping ;`
 
- *expression*     → `literal
-                  | unary
-                  | binary
-                  | grouping ;`
 
+ *expression*  → `ternary`;
+ 
+ *ternary*     → `assignment` | `assignment` ? `assignment` : `assignment`;
+ 
+ *assignment*  → `logic_or` | IDENTIFIER "=" `ternary`
+ 
+ *logic_or*    → `logic_and` ( "or" `logic_and`)* ;
+ 
+ *logic_and*   → `equality` ("and" `equality`)* ; 
+
+ *equality*    → `comparsion ("==" | "!=" comparison)*;`
+
+ *comparison*  → `term ("<="|"<"|">"|">=" term)*;`
+
+ *term*        → `factor ("+"|"-" factor)*;`
+
+ *factor*      → `unary (( "%" | "/" | "*" ) unary )*;`
+
+ *unary*       → `("-" | "!") unary | primary;`
+
+ *primary*     → `literal | identifier | "(" expression ")"
+ 
  *literal*        → `NUMBER | STRING | "true" | "false" | "nil" ;`
 
  *grouping*       → `"(" expression ")" ;`
