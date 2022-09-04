@@ -1,4 +1,4 @@
- # Lox grammer: 
+ # Lox grammar: 
  *program*          → `declaration`* EOF;
  
  *declaration*      → `variableDecl` | `statement`;
