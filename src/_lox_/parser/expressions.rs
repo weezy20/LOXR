@@ -23,6 +23,8 @@ pub enum Expression {
     Assignment(AssignmentExpr),
     // Should not be evaluated by the interpreter, only for parser usage
     Variable(Token),
+    LogicOr(OrExpr),
+    LogicAnd(AndExpr),
 }
 
 impl Display for Expression {
@@ -47,9 +49,26 @@ impl Display for Expression {
             Expression::Error(x) => format!("{x:?}"),
             Expression::Assignment(AssignmentExpr { name, right }) => format!("{name} = {right}"),
             Expression::Variable(t) => format!("{t}"),
+            Expression::LogicOr(l) => format!("{l}"),
+            Expression::LogicAnd(l) => format!("{l}"),
         };
         write!(f, "{out}")
     }
+}
+
+#[derive(Debug, PartialEq, Clone, derive_more::Display)]
+#[display(fmt = "LogicalAnd(Left [{}] and Right [{}])", left, right)]
+pub struct AndExpr {
+    pub left: Box<Expression>,
+    pub operator: Token, // type AND
+    pub right: Box<Expression>,
+}
+#[derive(Debug, PartialEq, Clone, derive_more::Display)]
+#[display(fmt = "LogicalOr(Left [{}] or Right [{}])", left, right)]
+pub struct OrExpr {
+    pub left: Box<Expression>,
+    pub operator: Token, // type OR
+    pub right: Box<Expression>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -94,6 +113,8 @@ impl Display for BinaryExpr {
             Expression::Error(_) => "ErrorProduction".into(),
             Expression::Assignment(AssignmentExpr { name, right }) => format!("{name} = {right}"),
             Expression::Variable(t) => format!("{t}"),
+            Expression::LogicOr(l) => format!("{l}"),
+            Expression::LogicAnd(l) => format!("{l}"),
         };
         let right = match &*self.right {
             Expression::CommaExpr(_) => "CommaExpr".into(),
@@ -105,6 +126,8 @@ impl Display for BinaryExpr {
             Expression::Error(_) => "ErrorProduction".into(),
             Expression::Assignment(AssignmentExpr { name, right }) => format!("{name} = {right}"),
             Expression::Variable(t) => format!("{t}"),
+            Expression::LogicOr(l) => format!("{l}"),
+            Expression::LogicAnd(l) => format!("{l}"),
         };
         write!(f, "{left} {op} {right}", op = self.operator.lexeme)
     }
@@ -127,6 +150,8 @@ impl Display for UnaryExpr {
             Expression::Lit(lit) => format!("{lit}"),
             Expression::Assignment(AssignmentExpr { name, right }) => format!("{name} = {right}"),
             Expression::Variable(t) => format!("{t}"),
+            Expression::LogicOr(l) => format!("{l}"),
+            Expression::LogicAnd(l) => format!("{l}"),
         };
         write!(f, "{}{operand}", &self.operator.lexeme)
     }

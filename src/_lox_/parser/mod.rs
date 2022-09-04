@@ -17,10 +17,27 @@
 //!
 //! *ternary*        → `expression` ? `expression` : `expression`;
 //!
-//! *expression*     → `literal
-//!                  | unary
-//!                  | binary
-//!                  | grouping ;`
+//! *expression*  → `assignment`;
+//! 
+//! *assignment*  → `ternary` | IDENTIFIER "=" `assignment`
+//! 
+//! *ternary*     → `logic_or` | `logic_or` ? : `logic_or`;
+//! 
+//! *logic_or*    → `logic_and` ( "or" `logic_and`)* ;
+//! 
+//! *logic_and*   → `equality` ("and" `equality`)* ; 
+//!
+//! *equality*    → `comparsion ("==" | "!=" comparison)*;`
+//!
+//! *comparison*  → `term ("<="|"<"|">"|">=" term)*;`
+//!
+//! *term*        → `factor ("+"|"-" factor)*;`
+//!
+//! *factor*      → `unary (( "%" | "/" | "*" ) unary )*;`
+//!
+//! *unary*       → `("-" | "!") unary | primary;`
+//!
+//! *primary*     → `literal | identifier | "(" expression ")";`
 //!
 //! *literal*        → `NUMBER | STRING | "true" | "false" | "nil" ;`
 //!
@@ -42,23 +59,7 @@
 //! a = 1 < 2 ? 3 : 4; // a = 3 (Note the absence of keyword `var`, it's because this is an Assignment Expression)
 //! 
 //!
-//! *expression*  → `assignment`;
-//! 
-//! *assignment*  → `ternary` | IDENTIFIER "=" assignment
-//! 
-//! *ternary*     → `equality` | `equality` ? : `equality`;
-//!
-//! *equality*    → `comparsion ("==" | "!=" comparison)*;`
-//!
-//! *comparison*  → `term ("<="|"<"|">"|">=" term)*;`
-//!
-//! *term*        → `factor ("+"|"-" factor)*;`
-//!
-//! *factor*      → `unary (( "%" | "/" | "*" ) unary )*;`
-//!
-//! *unary*       → `("-" | "!") unary | primary;`
-//!
-//! *primary*     → `literal | identifier | "(" expression ")";`
+
 
 #[allow(unused_imports)]
 use colored::Colorize;
@@ -118,7 +119,6 @@ impl Parser {
     }
     /// *expression*  → `equality`
     pub fn expression(&mut self) -> Result<Box<Expression>, ParserError> {
-        // self.ternary()
         self.assignment()
     }
     /// *assignment*  → `ternary` | IDENTIFIER "=" assignment
@@ -159,11 +159,11 @@ impl Parser {
         }
         Ok(expression)
     }
-    /// *ternary*     → `equality` | `equality` ? : `equality`;
+    /// *ternary*     → `logic_or` | `logic_or` ? : `logic_or`;
     pub fn ternary(&mut self) -> Result<Box<Expression>, ParserError> {
-        let conditional_expr = self.equality()?;
+        let conditional_expr = self.or()?;
         while self.matches(&[TERNARYC]) {
-            let left_expr = self.expression()?;
+            let left_expr = self.or()?;
             while self.matches(&[TERNARYE]) {
                 let right_expr = self.expression()?;
                 return Ok(Box::new(Expression::TernExpr(TernaryExpr {
@@ -178,6 +178,26 @@ impl Parser {
         
         }
         Ok(conditional_expr)
+    }
+    /// *logic_or*    → `logic_and` ( "or" `logic_and`)* ;
+    pub fn or(&mut self) -> Result<Box<Expression>, ParserError> {
+        let mut expr = self.and()?;
+        while self.matches(&[OR]) {
+            let operator = self.previous.take().expect("infallible");
+            let right = self.and()?;
+            expr = box Expression::LogicOr(OrExpr { left: expr, operator, right });
+        }
+        Ok(expr)
+    }
+    /// *logic_and*   → `equality` ("and" `equality`)* ; 
+    pub fn and(&mut self) -> Result<Box<Expression>, ParserError> {
+        let mut expr = self.equality()?;
+        while self.matches(&[AND]) {
+            let operator = self.previous.take().expect("infallible");
+            let right = self.equality()?;
+            expr = box Expression::LogicAnd(AndExpr { left: expr, operator, right });
+        }
+        Ok(expr)
     }
     /// *equality*    → `comparsion ("==" | "!=" comparison)*;`
     pub fn equality(&mut self) -> Result<Box<Expression>, ParserError> {

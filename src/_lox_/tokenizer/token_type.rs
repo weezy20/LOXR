@@ -34,6 +34,7 @@ pub enum TokenType {
 
     // Keywords
     AND,
+    OR,
     CLASS,
     ELSE,
     FALSE,
@@ -41,7 +42,6 @@ pub enum TokenType {
     FOR,
     IF,
     NIL,
-    OR,
     PRINT,
     RETURN,
     SUPER,

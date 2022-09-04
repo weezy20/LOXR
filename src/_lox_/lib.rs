@@ -25,11 +25,32 @@
 //!
 //! *ternary*        → `expression` ? `expression` : `expression`;
 //!
-//! *expression*     → `literal
-//!                  | unary
-//!                  | binary
-//!                  | grouping ;`
+//! *expression*     → `assignment
+//!                   | literal
+//!                   | unary
+//!                   | binary
+//!                   | grouping ;`
 //!
+//! *assignment*  → `ternary` | IDENTIFIER "=" `assignment`
+//! 
+//! *ternary*     → `logic_or` | `logic_or` ? : `logic_or`;
+//! 
+//! *logic_or*    → `logic_and` ( "or" `logic_and`)* ;
+//! 
+//! *logic_and*   → `equality` ("and" `equality`)* ; 
+//!
+//! *equality*    → `comparsion ("==" | "!=" comparison)*;`
+//!
+//! *comparison*  → `term ("<="|"<"|">"|">=" term)*;`
+//!
+//! *term*        → `factor ("+"|"-" factor)*;`
+//!
+//! *factor*      → `unary (( "%" | "/" | "*" ) unary )*;`
+//!
+//! *unary*       → `("-" | "!") unary | primary;`
+//!
+//! *primary*     → `literal | identifier | "(" expression ")";`
+
 //! *literal*        → `NUMBER | STRING | "true" | "false" | "nil" ;`
 //!
 //! *grouping*       → `"(" expression ")" ;`

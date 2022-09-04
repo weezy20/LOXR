@@ -69,7 +69,23 @@ impl<E: Memory> Evaluate<E> for Expression {
                     }
                 }
             }
+            Expression::LogicOr(l) => l.eval(env),
+            Expression::LogicAnd(l) => l.eval(env),
         }
+    }
+}
+// logical operators short circuit in rust so we can make use of that
+// https://stackoverflow.com/questions/53644809/do-logical-operators-short-circuit-in-rust
+// https://doc.rust-lang.org/reference/expressions/operator-expr.html#lazy-boolean-operators
+impl<E: Memory> Evaluate<E> for AndExpr {
+    fn eval(&self, env: &mut E) -> ValueResult {
+        Ok((self.left.eval(env)?.is_truthy() && self.right.eval(env)?.is_truthy()).into())
+    }
+}
+impl<E: Memory> Evaluate<E> for OrExpr {
+    fn eval(&self, env: &mut E) -> ValueResult {
+        // Ok((self.left.eval(env)?.is_truthy() || panic!("cannot panic this if left true")).into())
+        Ok((self.left.eval(env)?.is_truthy() || self.right.eval(env)?.is_truthy()).into())
     }
 }
 
