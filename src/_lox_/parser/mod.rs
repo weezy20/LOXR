@@ -121,19 +121,19 @@ impl Parser {
     /// In C, the ternary conditional operator has higher precedence than assignment operators.
     pub fn ternary(&mut self) -> Result<Box<Expression>, ParserError> {
         let conditional_expr = self.assignment()?;
-        loc!(format!("ternary here with condition/left -> {conditional_expr}"));
+        // loc!(format!("ternary here with condition/left -> {conditional_expr}"));
         if self.matches(&[TERNARYC]) {
             let left_expr = self.expression()?;
-            loc!(format!("ternary here with left -> {left_expr}"));
+            // loc!(format!("ternary here with left -> {left_expr}"));
             if self.matches(&[TERNARYE]) {
                 let right_expr = self.expression()?;
-                loc!(format!("ternary here with right -> {right_expr}"));
+                // loc!(format!("ternary here with right -> {right_expr}"));
                 let t = Expression::TernExpr(TernaryExpr {
                     condition: conditional_expr,
                     if_true: left_expr,
                     if_false: right_expr,
                 });
-                loc!(format!("Ternary formed -> {t}"));
+                // loc!(format!("Ternary formed -> {t}"));
                 return Ok(Box::new(t));
             } // match TERNARYE
             return Err(ParserError::ExpectedExpression);
@@ -582,12 +582,16 @@ impl Parser {
     fn if_statement(&mut self) -> Result<Stmt, ParserError> {
         self.consume(LEFT_PAREN)?;
         let condition = self.expression()?;
+        loc!(format!("if condition -> {}", &condition));
         self.consume(RIGHT_PAREN)?;
+        // let then = self.collect();
         let then_ = box self.collect();
+        loc!(format!("then branch -> {}", *then_));
         let mut else_ = None;
         // This `else` is bound to the nearest if statement
         if self.matches(&[ELSE]) {
             else_ = Some(box self.collect());
+            loc!(format!("else branch -> {}", else_.as_ref().unwrap()));
         }
         Ok(Stmt::IfStmt { condition, then_, else_ })
 

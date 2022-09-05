@@ -1,0 +1,18 @@
+if (true) 
+    if (false) print "wrong!"; 
+    else print "expected!";
+// print "if 'expected!' isn't above this line then the code is wrong";
+if (false)
+    print "bool = false";
+else 
+    print "bool = true";
+
+// comments after if/else then/else branches confuse the interpreter
+// "math == 1"
+if (true)
+    if (1 == 1) 
+        print "innerif - math 1==1"; 
+    else 
+        print "innerelse -1!=1???";
+else 
+    print "outer else";

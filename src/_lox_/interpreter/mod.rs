@@ -35,6 +35,14 @@ impl Interpreter {
             ..Default::default()
         }
     }
+    /// Extend with env
+    pub fn extend_with_env(&mut self, mut p: Parser, env: Rc<RefCell<Environment>>) {
+        self.env = env;
+        self.previous = self.stmts.len();
+        self.stmts.append(&mut p.parse());
+        loc!(format!("Interpreter modified -> {self:?}"));
+        self.interpret();
+    }
     /// Extend a repl interpreter and interpret the added stmts
     pub fn extend(&mut self, mut p: Parser) {
         assert!(
@@ -47,7 +55,7 @@ impl Interpreter {
         self.interpret();
         // if self.is_repl_mode ? then for stmt in self.stmts[self.previous..].iter() { .. }
     }
-    /// Execute a block of statements inside new environment `sub_env`
+    /// Execute a block of statements inside environment `sub_env`
     fn execute_block(
         &self,
         statements: &Vec<Stmt>,
@@ -91,18 +99,23 @@ impl Interpreter {
                 stmts,
                 Rc::new(RefCell::new(Environment::new(Rc::clone(&rc_env)))),
             ),
-            Stmt::IfStmt {
+            _ifstmt @ Stmt::IfStmt {
                 condition,
                 then_,
                 else_,
             } => {
+                // println!(" Got a {_ifstmt}");
                 let condition_value = condition.eval(&mut Rc::clone(&rc_env))?;
+                // create a new environment
+                let if_else = Rc::new(RefCell::new(Environment::new(Rc::clone(&rc_env))));
+                let mut val = Value::Nil;
                 if condition_value.is_truthy() {
-                    self.execute(then_.as_ref(), Rc::clone(&rc_env))?;
-                } else if let Some(else_) = else_ {
-                    self.execute(else_.as_ref(), Rc::clone(&rc_env))?;
+                    val = self.execute(then_.as_ref(), if_else)?;
                 }
-                Ok(Value::Nil)
+                else if let Some(else_branch) = else_ {
+                    val = self.execute(else_branch, if_else)?;
+                }
+                Ok(val)
             }
             Stmt::VarDecl { name, initializer } => {
                 // let init_err : Option<EvalError> = None;

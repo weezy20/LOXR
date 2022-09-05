@@ -20,14 +20,14 @@ pub enum Stmt {
     /// Block scopes
     #[display(fmt = "BlockStmt [{:?}]", "_0")]
     Block(Vec<Stmt>),
-    /// If statement
+    /// If statement // todo: can be made better for formatting nested if/else
     #[display(
-        fmt = "IfStmt Condition : {} Then : {} {}",
+        fmt = "{{IfStmt (Condition : {}) \n\t{} \n\t{}}}",
         condition,
-        then_,
+        r#"format!("[Then : ->{}-<]" , then_)"#,
         r#"if let Some(e) = else_ {
-        format!("Else: {}", *e)
-    } else { "".to_string() }"#
+        format!("[Else: =>{}<=]", *e)
+    } else { "(No else)".to_string() }"#
     )]
     IfStmt {
         condition: Box<Expression>,

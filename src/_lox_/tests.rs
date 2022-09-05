@@ -1,12 +1,12 @@
 #![allow(unused, warnings)]
 #![cfg(test)]
-use crate::parser::value::Value;
-use std::cell::RefCell;
 use crate::interpreter::Environment;
-use std::rc::Rc;
+use crate::parser::value::Value;
 use crate::parser::Parser;
 use crate::tokenizer::scanner::*;
 use crate::Lox;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 mod tokenizer_tests {
     use super::*;
@@ -112,7 +112,7 @@ adsadasdasdasd
 
 mod parser_tests {
     use super::*;
-    use crate::interpreter::{Interpreter, self};
+    use crate::interpreter::{self, Interpreter};
     use crate::parser::error::ParserError;
     use crate::parser::traits::evaluate::Evaluate;
     use crate::parser::traits::printer::ExpressionPrinter;
@@ -220,17 +220,26 @@ mod parser_tests {
         println!("4 == 5? 1 < 2 ? 1 : 2 : 3 -> \n{:?}", res);
         assert_eq!(res, Value::Double(3.0));
     }
-    #[ignore = "test from stdout"]
     #[test]
     fn check_nested_ternary_expression3() {
-        let tokens = setup_lox!("var a; var b; var c; var d; var e; a = !(b = 2) ? c = 2 : d = !(e = 3) ? 100 : 1000;");
+        // let tokens = setup_lox!("var a; var b; var c; var d; var e; a = !(b = 2) ? c = 2 : d = !(e = 3) ? 100 : 1000;");
         let mut env = Rc::new(RefCell::new(Environment::default()));
+        {
+            let mut e = env.borrow_mut();
+            e.values.insert("a".to_string(), Value::Nil);
+            e.values.insert("b".to_string(), Value::Nil);
+            e.values.insert("c".to_string(), Value::Nil);
+            e.values.insert("d".to_string(), Value::Nil);
+            e.values.insert("e".to_string(), Value::Nil);
+        } // RefMut dropped here
+        let tokens = setup_lox!("a = !(b = 2) ? c = 2 : d = !(e = 3) ? 100 : 1000;");
         let p = Parser::new(tokens);
-        let mut int = Interpreter::new(p);
+        let mut int = Interpreter::default();
+        &mut int.extend_with_env(p, env);
         // figure out a way to test from stdout
         println!("var a = !(b = 2) ? c = 2 : d = !(e = 3) ? 100 : 1000; -> \n");
-        // int.interpret();
-        // assert_eq!(res, Value::Double(1000.0)); 
+        int.interpret();
+        // assert_eq!(res, Value::Double(1000.0));
     }
     #[test]
     /// Missing left operand. This should trigger a synchronization and pick up parsing from 10+11==12
