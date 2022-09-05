@@ -11,7 +11,7 @@ pub enum Stmt {
     #[display(fmt = "ExprStmt [{}]", "_0")]
     ExprStmt(Box<Expression>),
     /// A print statement evaluaets an expression and prints to console
-    #[display(fmt = "PrintStmt : [{}]", "*_0")]
+    #[display(fmt = r#"PrintStmt "{}""#, "*_0")]
     Print(Box<Expression>),
     /// Represents a syntax error, maybe moved to Declaration
     ErrStmt { message: String },
@@ -22,17 +22,27 @@ pub enum Stmt {
     Block(Vec<Stmt>),
     /// If statement // todo: can be made better for formatting nested if/else
     #[display(
-        fmt = "{{IfStmt (Condition : {}) \n\t{} \n\t{}}}",
+        fmt = "{{ \n\tIfStmt (Condition : {}) \n\t{} \n\t{}\n\t}}",
         condition,
-        r#"format!("[Then : ->{}-<]" , then_)"#,
-        r#"if let Some(e) = else_ {
-        format!("[Else: =>{}<=]", *e)
-    } else { "(No else)".to_string() }"#
+        r#"{
+            use colored::Colorize;
+            // let mut padding = String::from("");
+
+            format!("[Then({})]" , then_).bright_green().bold()
+        }"#,
+        r#"{
+            use colored::Colorize;
+            if let Some(e) = else_ {
+                format!("[Else({})]", *e).bright_red().bold()
+            } 
+            else { "(No else)".to_string().bright_red() }
+        }"#
     )]
     IfStmt {
         condition: Box<Expression>,
         then_: Box<Stmt>,
         else_: Option<Box<Stmt>>,
+        // padding: usize,
     },
     #[display(fmt = "VarDecl IDENTIFER : '{}', Expression : {:?}", name, initializer)]
     VarDecl {

@@ -91,6 +91,7 @@ pub struct Parser {
     previous: Option<Token>,
     error_production : Vec<Token>,
     parser_corrupt: bool,
+    padding: usize,
 }
 /// In a recursive descent parser, the least priority rule is matched first
 /// as we descend down into nested grammer rules
@@ -496,6 +497,7 @@ impl Parser {
             previous: None,
             error_production: vec![],
             parser_corrupt: false,
+            padding : 0
         }
     }
     /// Parse as an expression

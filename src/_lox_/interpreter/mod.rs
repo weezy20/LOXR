@@ -104,7 +104,7 @@ impl Interpreter {
                 then_,
                 else_,
             } => {
-                // println!(" Got a {_ifstmt}");
+                println!(" Got a {_ifstmt}");
                 let condition_value = condition.eval(&mut Rc::clone(&rc_env))?;
                 // create a new environment
                 let if_else = Rc::new(RefCell::new(Environment::new(Rc::clone(&rc_env))));
