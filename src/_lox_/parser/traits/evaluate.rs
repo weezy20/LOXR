@@ -10,11 +10,11 @@ use crate::{loc, Lox};
 pub type ValueResult = Result<Value, EvalError>;
 
 pub trait Evaluate<E: Memory> {
-    fn eval(&self, env: &mut E) -> ValueResult;
+    fn eval(&self, env: &E) -> ValueResult;
 }
 
 impl<E: Memory> Evaluate<E> for Expression {
-    fn eval(&self, env: &mut E) -> ValueResult {
+    fn eval(&self, env: &E) -> ValueResult {
         match self {
             Expression::CommaExpr(expr_list) => {
                 // Comma expressions evaluate the list, discarding all results uptil the last one
@@ -78,19 +78,19 @@ impl<E: Memory> Evaluate<E> for Expression {
 // https://stackoverflow.com/questions/53644809/do-logical-operators-short-circuit-in-rust
 // https://doc.rust-lang.org/reference/expressions/operator-expr.html#lazy-boolean-operators
 impl<E: Memory> Evaluate<E> for AndExpr {
-    fn eval(&self, env: &mut E) -> ValueResult {
+    fn eval(&self, env: &E) -> ValueResult {
         Ok((self.left.eval(env)?.is_truthy() && self.right.eval(env)?.is_truthy()).into())
     }
 }
 impl<E: Memory> Evaluate<E> for OrExpr {
-    fn eval(&self, env: &mut E) -> ValueResult {
+    fn eval(&self, env: &E) -> ValueResult {
         // Ok((self.left.eval(env)?.is_truthy() || panic!("cannot panic this if left true")).into())
         Ok((self.left.eval(env)?.is_truthy() || self.right.eval(env)?.is_truthy()).into())
     }
 }
 
 impl<E: Memory> Evaluate<E> for AssignmentExpr {
-    fn eval(&self, env: &mut E) -> ValueResult {
+    fn eval(&self, env: &E) -> ValueResult {
         let (name, right) = (&self.name.lexeme, &self.right);
         let rval = right.eval(env)?;
         /*.map_err(|eval_err| {
@@ -113,7 +113,7 @@ impl<E: Memory> Evaluate<E> for AssignmentExpr {
 }
 
 impl<E: Memory> Evaluate<E> for TernaryExpr {
-    fn eval(&self, env: &mut E) -> ValueResult {
+    fn eval(&self, env: &E) -> ValueResult {
         // TernaryExpr { condition : Box<expr> , if_true : Box<expr>, if_false : Box<expr> }
         let condition = self.condition.eval(env)?;
         let condition = condition.is_truthy();
@@ -123,7 +123,7 @@ impl<E: Memory> Evaluate<E> for TernaryExpr {
 }
 
 impl<E: Memory> Evaluate<E> for BinaryExpr {
-    fn eval(&self, env: &mut E) -> ValueResult {
+    fn eval(&self, env: &E) -> ValueResult {
         let err_exp = Expression::BinExpr(self.clone());
         let left = self.left.eval(env)?;
         let right = self.right.eval(env)?;
@@ -283,7 +283,7 @@ impl<E: Memory> Evaluate<E> for BinaryExpr {
 }
 
 impl<E: Memory> Evaluate<E> for UnaryExpr {
-    fn eval(&self, env: &mut E) -> ValueResult {
+    fn eval(&self, env: &E) -> ValueResult {
         let right = self.operand.eval(env)?;
         let result = match self.operator.r#type {
             BANG => Value::Bool(!right.is_truthy()),
@@ -308,7 +308,7 @@ impl<E: Memory> Evaluate<E> for UnaryExpr {
 }
 
 impl<E: Memory> Evaluate<E> for Literal {
-    fn eval(&self, _env: &mut E) -> ValueResult {
+    fn eval(&self, _env: &E) -> ValueResult {
         match self.inner.r#type {
             STRING => Ok(self.inner.lexeme.clone().into()),
             NUMBER => {
@@ -326,7 +326,7 @@ impl<E: Memory> Evaluate<E> for Literal {
 }
 
 impl<E: Memory> Evaluate<E> for Grouping {
-    fn eval(&self, env: &mut E) -> ValueResult {
+    fn eval(&self, env: &E) -> ValueResult {
         self.inner.eval(env)
     }
 }

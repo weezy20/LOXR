@@ -1,5 +1,6 @@
 print 1;
 //1+2;3-2
 var a = 4+2(9-2)
-var x = 10;
- var a = 1<2? 4 + 5; // error
+var a = 1<2? 4 + 5; // error
+var a; { a = 4;  { a  = 5 ; {{{print a; a = 199;}}} } }
+

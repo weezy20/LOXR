@@ -23,9 +23,9 @@ pub struct Interpreter {
 }
 
 pub trait Memory {
-    fn define(&mut self, name: &str, value: Value);
+    fn define(&self, name: &str, value: Value);
     fn get(&self, name: &Token) -> Result<Option<Value>, RuntimeError>;
-    fn put(&mut self, name: &str, value: Value) -> Result<(), RuntimeError>;
+    fn put(&self, name: &str, value: Value) -> Result<(), RuntimeError>;
 }
 
 impl Interpreter {
@@ -77,7 +77,7 @@ impl Interpreter {
         Ok(Value::Nil)
     }
     /// Execute a statement inside a new environment `rc_env`
-    fn execute(&self, stmt: &Stmt, mut rc_env: Rc<RefCell<Environment>>) -> ValueResult {
+    fn execute(&self, stmt: &Stmt, rc_env: Rc<RefCell<Environment>>) -> ValueResult {
         // Since our Rc is already "owned" by enclosing functions, we cannot safely deref_mut it
         // But in a single threaded context this will be safe
         // let env: &mut Environment = unsafe { Rc::get_mut_unchecked(&mut rc_env) };
@@ -97,7 +97,7 @@ impl Interpreter {
             // Create a new environment
             Stmt::Block(stmts) => self.execute_block(
                 stmts,
-                Rc::new(RefCell::new(Environment::new(Rc::clone(&rc_env)))),
+                Rc::new(RefCell::new(Environment::enclosed_by(Rc::clone(&rc_env)))),
             ),
             _ifstmt @ Stmt::IfStmt {
                 condition,
@@ -107,7 +107,7 @@ impl Interpreter {
                 // println!(" Got a {_ifstmt}");
                 let condition_value = condition.eval(&mut Rc::clone(&rc_env))?;
                 // create a new environment
-                let if_else = Rc::new(RefCell::new(Environment::new(Rc::clone(&rc_env))));
+                let if_else = Rc::new(RefCell::new(Environment::enclosed_by(Rc::clone(&rc_env))));
                 let mut val = Value::Nil;
                 if condition_value.is_truthy() {
                     val = self.execute(then_.as_ref(), if_else)?;
@@ -117,6 +117,14 @@ impl Interpreter {
                 }
                 Ok(val)
             }
+            Stmt::While { condition, body } => {
+                let mut val = Value::Nil;
+                let loop_env = Rc::new(RefCell::new(Environment::enclosed_by(Rc::clone(&rc_env))));
+                while condition.eval(&Rc::clone(&rc_env))?.is_truthy() {
+                    val = self.execute(&body.as_ref(), Rc::clone(&loop_env))?;
+                }
+                Ok(val)
+            },
             Stmt::VarDecl { name, initializer } => {
                 // let init_err : Option<EvalError> = None;
                 let val = if let Some(expr) = initializer {
@@ -158,7 +166,7 @@ impl Interpreter {
                     Stmt::Empty => Ok(Value::Nil),
                     Stmt::Block(scoped_stmts) => self.execute_block(
                         scoped_stmts,
-                        Rc::new(RefCell::new(Environment::new(Rc::clone(&self.env)))),
+                        Rc::new(RefCell::new(Environment::enclosed_by(Rc::clone(&self.env)))),
                     ),
                     // fancy @ syntax
                     ifstmt @ Stmt::IfStmt {
@@ -166,8 +174,7 @@ impl Interpreter {
                         then_: _,
                         else_: _,
                     } => {
-                        // This clone should remind you to use Rc for everything nextime
-                        self.execute(&ifstmt.clone(), Rc::clone(&self.env))
+                        self.execute(&ifstmt, Rc::clone(&self.env))
                     }
                 ,
                 // Declarations should produce no values
@@ -190,6 +197,9 @@ impl Interpreter {
                     crate::loc!(format!("{:?}", self.env.borrow().values));
                     Ok(Value::Nil)
                 }
+                while_stmt @ Stmt::While { condition: _, body: _ } => {
+                    self.execute(&while_stmt, Rc::clone(&self.env))
+                },
                 
             };
             match val {

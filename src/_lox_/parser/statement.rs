@@ -34,6 +34,11 @@ pub enum Stmt {
         then_: Box<Stmt>,
         else_: Option<Box<Stmt>>,
     },
+    #[display(fmt = "While Stmt (Condition : {})", condition)]
+    While {
+        condition: Box<Expression>,
+        body: Box<Stmt>
+    },
     #[display(fmt = "VarDecl IDENTIFER : '{}', Expression : {:?}", name, initializer)]
     VarDecl {
         name: String,

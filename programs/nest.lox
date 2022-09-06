@@ -1,0 +1,12 @@
+var x; {
+    x = 10; 
+    {
+        print "ENTER --- inner scope";
+        {
+            x = "err";
+            x;
+        }
+    }
+}
+print "OUTER SCOPE -----";
+print x; // should be "err"

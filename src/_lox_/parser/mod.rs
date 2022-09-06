@@ -568,6 +568,9 @@ impl Parser {
         else if self.matches(&[IF]){
             self.if_statement()
         }
+        else if self.matches(&[WHILE]) {
+            self.while_statement()
+        }
         else {
             self.expression_statement()
         };
@@ -578,6 +581,14 @@ impl Parser {
                 err.into()
             },
         }
+    }
+    fn while_statement(&mut self) -> Result<Stmt, ParserError> {
+        self.consume(LEFT_PAREN)?;
+        let condition = self.expression()?;
+        loc!(format!("if condition -> {}", &condition));
+        self.consume(RIGHT_PAREN)?;
+        let body = box self.collect();
+        Ok(Stmt::While { condition, body })
     }
     fn if_statement(&mut self) -> Result<Stmt, ParserError> {
         self.consume(LEFT_PAREN)?;
