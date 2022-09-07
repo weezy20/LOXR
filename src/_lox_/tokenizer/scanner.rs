@@ -9,6 +9,7 @@ use TokenType::*;
 lazy_static! {
     static ref KEYWORDS: HashMap<&'static str, TokenType> = {
         let mut h = HashMap::new();
+        h.insert("break", BREAK);
         h.insert("print", PRINT);
         h.insert("and", AND);
         h.insert("class", CLASS);

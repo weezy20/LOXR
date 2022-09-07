@@ -51,7 +51,9 @@ pub enum EvalError {
     #[error("Cannot divide by zero in: {0}")]
     DivideByZero(Expression),
     #[error("{0}")]
-    VariableEval(RuntimeError)
+    VariableEval(RuntimeError),
+    #[error("Break cannot be used outside loops")]
+    BreakWithout,
 }
 
 #[derive(Error, Debug, PartialEq)]

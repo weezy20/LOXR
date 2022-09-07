@@ -39,6 +39,8 @@ pub enum Stmt {
         condition: Box<Expression>,
         body: Box<Stmt>
     },
+    #[display(fmt = "Break Stmt")]
+    Break,
     #[display(fmt = "VarDecl IDENTIFER : '{}', Expression : {:?}", name, initializer)]
     VarDecl {
         name: String,

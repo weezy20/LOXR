@@ -16,11 +16,13 @@ pub struct Environment {
     /// be simultaneously mutated
     enclosing: Option<Rc<RefCell<Environment>>>,
     is_global: bool,
+    inside_loop: bool,
 }
 impl Default for Environment {
     fn default() -> Self {
         Self {
             values: Default::default(),
+            inside_loop: false,
             enclosing: None,
             is_global: true,
         }
@@ -36,6 +38,21 @@ impl Environment {
             enclosing,
             ..Default::default()
         }
+    }
+    /// Create a new environment for loop 
+    pub fn loop_enclosed_by(enclosing: Rc<RefCell<Environment>>) -> Self {
+        let enclosing = Some(Rc::clone(&enclosing));
+        Self {
+            // If surrounded by an environment, cannot be global
+            is_global: false,
+            inside_loop: true,
+            enclosing,
+            ..Default::default()
+        }
+    }
+    pub fn in_loop(&self) -> bool
+    {
+        self.inside_loop
     }
 }
 impl Memory for Rc<RefCell<Environment>> {
