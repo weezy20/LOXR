@@ -92,82 +92,28 @@ impl Memory for Rc<RefCell<Environment>> {
             }
         }
     }
-    /// put is not allowed to create new keys or variable definitions, it can only update existing ones
     fn put(&self, name: &str, value: Value) -> Result<(), RuntimeError> {
-        println!("PUT called with {name} and {value}");
-        if !self.borrow().values.contains_key(name) {
-            let current_env: Rc<RefCell<Environment>> = Rc::clone(&self);
-            let mut previous: Rc<RefCell<Environment>> = Default::default();
-            // if self doesn't contain key, we must, changed from false -> true
-            let mut upgrade_scope = 0;
-            loop {
-                // println!("PUT LOOP, current now {:?}", current_env.borrow().values.keys());
-                // This code is skipped on first iter where instead we would like to upgrade_scope
-                if upgrade_scope >= 1 {
-                    // Only swap if switch is set, this will ensure previous = encl_env rather than the default value
-                    // println!(
-                    //     "before swap, previous {:?} :  current  {:?}",
-                    //     previous.borrow().values.keys(),
-                    //     current_env.borrow().values.keys()
-                    // );
-                    // previous must be initialized with encl_env (enclosing scope of current_env)
-                    current_env.swap(&previous);
-                    // Current_env now points to what it had as enclosing_env
-                    // println!(
-                    //     "after swap, previous {:?} :  current  {:?}",
-                    //     previous.borrow().values.keys(),
-                    //     current_env.borrow().values.keys()
-                    // );
+        let mut nested_found = false;
+        while !self.borrow().values.contains_key(name) {
+            if let Some(ref encl_env) = self.borrow_mut().enclosing {
+                // upgrade tmp scope to encl_env
+                let x = encl_env.put(name, value.clone())?;
+                if x == () {
+                    nested_found = true; 
+                    break; // no need to check further scopes
                 }
-                if let Some(ref encl_env) = current_env.borrow().enclosing {
-                    previous = Rc::clone(encl_env);
-                    if upgrade_scope == 0 {
-                        // On first iteration, upgrade_scope == false, and we must check the enclosing scope
-                        // for the variable, so it makes sense to run (if upgrade_scope) code block
-                        // before we proceed
-                        upgrade_scope = 1;
-                        continue;
-                    }
-                    if encl_env.borrow().values.contains_key(name) {
-                        encl_env.borrow_mut().values.insert(name.to_owned(), value);
-                        return Ok(());
-                    }
-                    // code block never entered
-                    else {
-                        upgrade_scope += upgrade_scope; // next loop iteration swap previous with current
-                        previous = Rc::clone(&encl_env);
-                        // current_env.swap(encl_env); // panics becz encl env is from current_env.borrow()
-                        // let x = current_env.borrow_mut(); // also panics, same reasons
-                        continue;
-                    }
-                }
-                // Upto this we have not found the var declared
-                // else { //removed else as the previous if either returns or restarts the loop
-                // the if let statement borrows() and therefore that Ref lives well into the else branch
-                // that was causing our borrow_mut() to panic
-
-                // No enclosing environment, current_env is global env
-                assert!(
-                    current_env.borrow().is_global,
-                    "ICE: Current env expected to be global at this point"
-                );
-                // let contains = current_env.borrow().values.contains_key(name);
-
-                let mut env_borrow = current_env
-                    .try_borrow_mut()
-                    .expect("ICE: cannot borrow as mut");
-                if env_borrow.values.contains_key(name) {
-                    env_borrow.values.insert(name.to_owned(), value);
-                    return Ok(());
-                } else {
-                    return Err(RuntimeError::UndefinedVar(name.to_owned()));
-                }
-                // } //removed else
             }
-            // Err(RuntimeError::UndefinedVar(name.to_owned()))
-        } else {
-            self.borrow_mut().values.insert(name.to_owned(), value);
-            Ok(())
+            break;
         }
+        if self.borrow().values.contains_key(name) {
+            self.borrow_mut().values.insert(name.to_owned(), value);
+        } 
+        else if nested_found {
+            return Ok(());
+        }
+        else {
+            return Err(RuntimeError::UndefinedVar(name.to_owned()));
+        }
+        Ok(())
     }
 }

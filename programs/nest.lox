@@ -1,12 +1,15 @@
-var x; {
+var x; 
+x = "before program start";
+{
     x = 10; 
     {
         print "ENTER --- inner scope";
         {
-            x = "err";
+            x = "innerr";
             x;
         }
     }
 }
+x = "global";
 print "OUTER SCOPE -----";
 print x; // should be "err"
