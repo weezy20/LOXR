@@ -3,7 +3,7 @@
  
  *declaration*      → `variableDecl` | statement;
  
- *variableDecl*     → `"var" IDENTIFIER ("=" expression)? ";"` ;
+ *variableDecl*     → `"var"` **IDENTIFIER** `("=" expression)? ";"` ;
  
  *statement*        → `exprStmt` | `printStmt` | `block` | `ifStmt` ;
  
@@ -49,7 +49,7 @@
 
  *unary*       → `("-" | "!") unary | primary;`
 
- *primary*     → `literal | identifier | "(" expression ")"
+ *primary*     → `literal | IDENTIFIER | "(" expression ")"`;
  
  *literal*        → `NUMBER | STRING | "true" | "false" | "nil" ;`
 
