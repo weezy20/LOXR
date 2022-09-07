@@ -1,9 +1,7 @@
-var a = 1; 
-while (a <= 3) 
-{ 
+print "odd numbers between 1 and 11";
+var a=1;
+// print "comma expression in while loop";
+while (true, "random string" , a <= 11)  {
     print a;
-    a = a+ 1;
-    // print a = a+1;     //  a = a+1;
+    a = a+2;
 }
-print "outside";
-print a;

@@ -4,6 +4,9 @@
 
 The main focus of this project is to understand how compilers work on scanning, parsing, and evaluating ASTs. We follow Robert Nystrom's book, but we also keep in mind rustic idioms and try leverage Rust's language design to our benefit rather than simply translating the Java implementation to Rust. 
 
+**Additional features:** 
+1. Ternary operations and comma expressions work. Check the `programs` for examples
+
 #### Work in Prorgress (many things don't work as of yet): 
 This is mainly a learning exercise but that doesn't mean it can't aspire for best code practices. Rust's error messages are something I **love** and I've tried to replicate that here. You are encouraged to clone, `cargo run`, and try to break it. I've tried my best to handle parsing and evaluation errors and be consistent with the error messages and formatting but all is not perfect. If you find a situation that causes a `panic`, `ICE`, a bad error message or if something doesn't work as expected, please open an issue. You can also try running with `cargo run --features debug` to see additional interpreter debug messages that I've sprinkled across the codebase for my debugging convenience. 
 

@@ -541,7 +541,7 @@ impl Parser {
             let name = name_token.lexeme;
             // Variable decl and init
             if self.matches(&[EQUAL]) {
-                let initializer = self.expression()?;
+                let initializer = self.parse_expression()?;
                 self.consume(SEMICOLON)?;
                 let _equal = self.previous.take().expect("Safe to unwrap here");                
                 Ok(Stmt::VarDecl{ name, initializer: Some(initializer) })
@@ -586,7 +586,7 @@ impl Parser {
     }
     fn while_statement(&mut self) -> Result<Stmt, ParserError> {
         self.consume(LEFT_PAREN)?;
-        let condition = self.expression()?;
+        let condition = self.parse_expression()?;
         loc!(format!("if condition -> {}", &condition));
         self.consume(RIGHT_PAREN)?;
         let body = box self.collect();
@@ -594,7 +594,7 @@ impl Parser {
     }
     fn if_statement(&mut self) -> Result<Stmt, ParserError> {
         self.consume(LEFT_PAREN)?;
-        let condition = self.expression()?;
+        let condition = self.parse_expression()?;
         loc!(format!("if condition -> {}", &condition));
         self.consume(RIGHT_PAREN)?;
         // let then = self.collect();
