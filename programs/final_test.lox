@@ -60,11 +60,11 @@ print "if 'expected!' isn't above this line then the code is wrong";
 print "";
 print "while loop";
 print "";
-var cnt = 2;
-// while (cnt > 0) {
-//     cnt = cnt - 1;
-//     print "loop!";
-// }
+var cnt = 4;
+while (cnt > 0) {
+    cnt = cnt - 1;
+    print "loop!"; print cnt;
+}
 
 print "";
 print "for loop";
