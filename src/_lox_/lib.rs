@@ -9,7 +9,7 @@
 //!
 //! *variableDecl*     → `"var" IDENTIFIER ("=" expression)? ";"` ;
 //!
-//! *statement*        → `exprStmt` | `printStmt` | `block` | `ifStmt` ;
+//! *statement*        → `exprStmt` | `printStmt` | `block` | `ifStmt` | `whileStmt` ;
 //!
 //! *exprStmt*         → `expression` ";" ;
 //!
@@ -18,6 +18,8 @@
 //! *block*            → `"{" (declaration)* "}"` ;
 //!
 //! *ifStmt*           → `"if" "(" expression ")"  statement ("else" statement)?` ;
+//! 
+//! *whileStmt*           → `"while" "(" expression ")"  statement` ;
 //!
 //! A comma expression evaluates to the final expression
 //!

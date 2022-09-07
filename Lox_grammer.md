@@ -14,8 +14,11 @@
  *block*            → `"{" (declaration)* "}"` ;
  
  *ifStmt*           → `"if" "(" expression ")"  statement ("else" statement)?` ;
+
+ *whileStmt*        → `"while" "(" expression ")"  statement` ;
+
  
- A comma expression evaluates to the final expression
+ **A comma expression evaluates to the final expression**
  
  *comma expr*  → `expression , (expression)* | "(" expression ")"`;
 
@@ -30,7 +33,7 @@
  
  *ternary*     → `assignment` | `assignment` ? `assignment` : `assignment`;
  
- *assignment*  → `logic_or` | IDENTIFIER "=" `ternary`
+ *assignment*  → `logic_or` | **IDENTIFIER** "=" `ternary`
  
  *logic_or*    → `logic_and` ( "or" `logic_and`)* ;
  

@@ -78,12 +78,14 @@ impl Interpreter {
     }
     /// Execute a statement inside a new environment `rc_env`
     fn execute(&self, stmt: &Stmt, rc_env: Rc<RefCell<Environment>>) -> ValueResult {
+        println!("IS THIS REPL MODE? {}", self.repl);
         // Since our Rc is already "owned" by enclosing functions, we cannot safely deref_mut it
         // But in a single threaded context this will be safe
         // let env: &mut Environment = unsafe { Rc::get_mut_unchecked(&mut rc_env) };
         // let env: &mut Environment = &mut rc_env.borrow_mut(); // not needed after impl Memory for Rc<RefCell<Environment>>
         match stmt {
-            Stmt::ExprStmt(x) | Stmt::Print(x) => x.eval(&mut Rc::clone(&rc_env)),
+            Stmt::ExprStmt(x)|
+            Stmt::Print(x) => x.eval(&Rc::clone(&rc_env)),
             Stmt::ErrStmt { message } => {
                 loc!();
                 eprintln!(
@@ -150,10 +152,19 @@ impl Interpreter {
     pub fn interpret(&mut self) -> () {
         for stmt in self.stmts[self.previous..].iter() {
             let val: ValueResult = match stmt {
-                    Stmt::ExprStmt(e) | Stmt::Print(e) => {
-                        // e.eval(Rc::get_mut(&mut self.env).expect("ICE: obtain &mut Env"))
-                        e.eval(&mut Rc::clone(&self.env))
+                    Stmt::ExprStmt(e) => {
+                        match **e {
+                            crate::parser::expressions::Expression::Assignment(_)
+                            | crate::parser::expressions::Expression::Variable(_) => {
+                                let _a = e.eval(&Rc::clone(&self.env));
+                                if _a.is_ok() && !self.repl { 
+                                    Ok(Value::Nil) }
+                                else { _a }
+                            },
+                            _ =>  e.eval(&Rc::clone(&self.env))
+                        }                        
                     }
+                    Stmt::Print(e) => e.eval(&Rc::clone(&self.env)),
                     Stmt::ErrStmt { message } => {
                         loc!();
                         eprintln!(

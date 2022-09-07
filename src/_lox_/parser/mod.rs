@@ -9,6 +9,8 @@
 //! printStmt        → print `expression` ";" ;
 //! block            → "{" declaration* "}" ;
 //! ifStmt           → "if" "(" expression ")"  statement ("else" statement)? ;
+//! *whileStmt*      → `"while" "(" expression ")"  statement` ;
+//!
 //! 
 //! A comma expression evaluates to the final expression
 //! *comma expr*  → `expression , (expression)* | "(" expression ")"`;
