@@ -54,7 +54,10 @@ pub enum TokenType {
 
     MULTI_LINE_COMMENT,
     COMMENT,
-    MISSING_OPERAND
+    MISSING_OPERAND,
+
+    // New addition
+    BREAK,
 }
 
 use crate::tokenizer::token_type::TokenType::*;
@@ -119,6 +122,7 @@ impl ToString for TokenType {
             TERNARYC => "?",
             TERNARYE => ":",
             MISSING_OPERAND => "Missing Operand",
+            BREAK => "Break",
         };
         str.to_string()
     }

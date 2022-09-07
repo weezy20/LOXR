@@ -573,6 +573,10 @@ impl Parser {
         else if self.matches(&[WHILE]) {
             self.while_statement()
         }
+        else if self.matches(&[BREAK])
+        {
+            self.break_statement()
+        }
         else {
             self.expression_statement()
         };
@@ -583,6 +587,10 @@ impl Parser {
                 err.into()
             },
         }
+    }
+    fn break_statement(&mut self) ->  Result<Stmt, ParserError> {
+        self.consume(SEMICOLON)?;
+        Ok(Stmt::Break)
     }
     fn while_statement(&mut self) -> Result<Stmt, ParserError> {
         self.consume(LEFT_PAREN)?;
