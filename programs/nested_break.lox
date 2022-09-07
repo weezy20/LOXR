@@ -1,0 +1,14 @@
+var a = 0;
+while (a < 500) {
+    a = a+1; 
+    if( a > 100) {
+        while (a < 250) {
+            a = a+2;
+            if (a == 249) 
+                break; // breaks the inner loop
+        }
+        print "Inner loop was successfully broken";
+        break; // break outer loop
+    }
+}
+print a; // expected 249
