@@ -10,6 +10,7 @@
 //! block            → "{" declaration* "}" ;
 //! ifStmt           → "if" "(" expression ")"  statement ("else" statement)? ;
 //! *whileStmt*      → `"while" "(" expression ")"  statement` ;
+//! *forStmt*        → `"for" "(" (varDecl | exprStmt) ";" expression? ";" expression? ";" ")"  ;
 //!
 //! 
 //! A comma expression evaluates to the final expression
@@ -577,6 +578,10 @@ impl Parser {
         else if self.matches(&[WHILE]) {
             self.while_statement()
         }
+        else if self.matches(&[FOR])
+        {
+            self.for_statement()
+        }
         else if self.matches(&[BREAK])
         {
             self.break_statement()
@@ -591,6 +596,53 @@ impl Parser {
                 err.into()
             },
         }
+    }
+    fn for_statement(&mut self) ->  Result<Stmt, ParserError> {
+        self.consume(LEFT_PAREN)?;
+        let initializer : Option<Stmt> = if self.matches(&[SEMICOLON])
+        {   
+            None
+        } else if self.matches(&[VAR])
+        {
+            Some(self.var_declaration()?)
+        }
+        else {
+            Some(self.expression_statement()?)
+        };
+        let condition : Option<Box<Expression>> = 
+          if self.matches(&[SEMICOLON])
+          {
+            None
+          } else {
+            Some(self.parse_expression()?)
+          }
+        ;
+        let cond_pos = self.consume(SEMICOLON).map_err(|err| ParserError::MissingOperand(SEMICOLON))?.expect("ICE: Expected `;` here");
+        let (cond_ln, cond_col) = (cond_pos.ln, cond_pos.col);
+        let update : Option<Box<Expression>> = if self.matches(&[RIGHT_PAREN]) {
+            None
+        } else {
+            Some(self.parse_expression()?)
+        };
+        self.consume(RIGHT_PAREN).map_err(|err| ParserError::MissingOperand(RIGHT_PAREN))?;
+        let block : Stmt = self.collect();
+        let for_condition = condition.unwrap_or_else(|| {
+            let ttrue = Token {r#type : TRUE, ln: cond_ln, col: cond_col, lexeme: "true".to_string()};
+            let literal_expr = Literal::new(ttrue).expect("infallible");
+             Box::new(Expression::Lit(literal_expr))
+        });
+        let for_block = box match update {
+            Some(update_expr) => {
+                 Stmt::Block(vec![block, Stmt::ExprStmt(update_expr)])
+            },
+            None => block,
+        };
+        let while_loop = Stmt::While { condition: for_condition, body: for_block };
+        let for_loop = match initializer {
+            Some(init_expr) => Stmt::Block(vec![init_expr, while_loop]), // BUG: init_expr is not part of a loop environment
+            None => while_loop,
+        };
+        Ok(for_loop)
     }
     fn break_statement(&mut self) ->  Result<Stmt, ParserError> {
         self.consume(SEMICOLON)?;

@@ -20,6 +20,8 @@
 //! *ifStmt*           → `"if" "(" expression ")"  statement ("else" statement)?` ;
 //! 
 //! *whileStmt*           → `"while" "(" expression ")"  statement` ;
+//! 
+//! *forStmt*           → `"for" "(" (varDecl | exprStmt) ";" expression? ";" expression? ";" ")"  ;
 //!
 //! A comma expression evaluates to the final expression
 //!

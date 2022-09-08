@@ -6,6 +6,11 @@ use derive_more::Display;
 /// A lox program is made up of lox statements
 #[display(fmt = "{}")]
 pub enum Stmt {
+    #[display(fmt = "VarDecl IDENTIFER : '{}', Expression : {:?}", name, initializer)]
+    VarDecl {
+        name: String,
+        initializer: Option<Box<Expression>>,
+    },
     /// An expression statement lets you place an expression where a statement is expected
     /// They exist to evaluate expressions that may have side effects
     #[display(fmt = "ExprStmt [{}]", "_0")]
@@ -41,11 +46,6 @@ pub enum Stmt {
     },
     #[display(fmt = "Break Stmt")]
     Break,
-    #[display(fmt = "VarDecl IDENTIFER : '{}', Expression : {:?}", name, initializer)]
-    VarDecl {
-        name: String,
-        initializer: Option<Box<Expression>>,
-    },
 }
 
 // Since we are using Ok(ErrStmt) instead of Err(ParserError) at some stages : expression_statement and print_statement

@@ -142,6 +142,7 @@ impl Interpreter {
             Stmt::While { condition, body } => {
                 let mut val = Value::Nil;
                 let loop_env = Rc::new(inside_env);
+                // BUG : ASsertions fail when while is inside a scope
                 assert!(inside_loop);
                 assert!(loop_env.borrow().in_loop());
                 while condition.eval(&Rc::clone(&rc_env))?.is_truthy() {

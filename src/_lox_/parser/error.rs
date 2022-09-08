@@ -1,5 +1,6 @@
 use crate::parser::expressions::Expression;
 use crate::tokenizer::token::Token;
+use crate::tokenizer::token_type::TokenType;
 use thiserror::Error;
 use colored::Colorize;
 
@@ -14,9 +15,9 @@ pub enum ParserError {
         _ => "This should never print lmao?".into()
     })]
     InvalidToken(Option<Token>),
-    #[error("Expected operand ")]
+    #[error("Expected operand : {:?}", _0)]
     // Most of the times InvalidToken can be more powerful than this error variant
-    MissingOperand,
+    MissingOperand(TokenType),
     #[error("Expected Expression")]
     ExpectedExpression,
     #[error("Expected one of ['{}', '{}'] but found EOF", "}".yellow(), ";".yellow())]
