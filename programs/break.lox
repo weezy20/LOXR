@@ -1,7 +1,7 @@
 var a = 1;
 while(a<=10) {
     if (a==5)
-        break;
+        break; // comment
     else
         a = a+1;
 }

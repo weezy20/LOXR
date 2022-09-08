@@ -491,7 +491,11 @@ impl Parser {
 }
 // Statement parsing
 impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Self {
+    pub fn new(mut tokens: Vec<Token>) -> Self {
+        // Filter out comment tokens
+        const COMMENTS : [TokenType;2] = [MULTI_LINE_COMMENT, COMMENT];
+        tokens = tokens.into_iter().filter(|t| !COMMENTS.contains(&t.r#type) ).collect();
+        // println!("tokens filtered -> {:?}", tokens.clone().into_iter().map(|x| x.r#type).collect::<Vec<TokenType>>());
         Self {
             tokens: tokens.into_iter().better_peekable(),
             current: 0_usize,
