@@ -64,7 +64,11 @@ impl Interpreter {
         inside_loop: bool
     ) -> ValueResult {
         for stmt in statements.iter() {
-            match self.execute(stmt, Rc::clone(&sub_env), inside_loop) {
+            // check if a statement is a loop, if yes, set `inside_loop`
+            let loop_stmt = if matches!(stmt, Stmt::While { .. }) {
+                true
+            } else { false };
+            match self.execute(stmt, Rc::clone(&sub_env), loop_stmt || inside_loop) {
                 Ok(val) if matches!(val, Value::Break) => {
                     // Early return
                     return Ok(Value::Break);
@@ -146,7 +150,7 @@ impl Interpreter {
                 assert!(inside_loop);
                 assert!(loop_env.borrow().in_loop());
                 while condition.eval(&Rc::clone(&rc_env))?.is_truthy() {
-                    val = self.execute(&body.as_ref(), Rc::clone(&loop_env), inside_loop)?;
+                    val = self.execute(&body.as_ref(), Rc::clone(&loop_env), true)?;
                     if matches!(val, Value::Break) {
                         return Ok(Default::default());
                     }
