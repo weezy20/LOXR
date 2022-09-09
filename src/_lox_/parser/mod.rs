@@ -617,14 +617,14 @@ impl Parser {
             Some(self.parse_expression()?)
           }
         ;
-        let cond_pos = self.consume(SEMICOLON).map_err(|err| ParserError::MissingOperand(SEMICOLON))?.expect("ICE: Expected `;` here");
+        let cond_pos = self.consume(SEMICOLON).map_err(|_err| ParserError::MissingOperand(SEMICOLON))?.expect("ICE: Expected `;` here");
         let (cond_ln, cond_col) = (cond_pos.ln, cond_pos.col);
         let update : Option<Box<Expression>> = if self.matches(&[RIGHT_PAREN]) {
             None
         } else {
             Some(self.parse_expression()?)
         };
-        self.consume(RIGHT_PAREN).map_err(|err| ParserError::MissingOperand(RIGHT_PAREN))?;
+        self.consume(RIGHT_PAREN).map_err(|_err| ParserError::MissingOperand(RIGHT_PAREN))?;
         let block : Stmt = self.collect();
         let for_condition = condition.unwrap_or_else(|| {
             let ttrue = Token {r#type : TRUE, ln: cond_ln, col: cond_col, lexeme: "true".to_string()};

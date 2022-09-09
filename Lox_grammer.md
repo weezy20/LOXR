@@ -1,63 +1,66 @@
  # Lox grammer: 
- *program*          → `declaration`* EOF;
+ *program*          → `declaration`* **EOF** **;**
  
- *declaration*      → `variableDecl` | statement;
+ *declaration*      → `variableDecl` | `statement` **;**
  
- *variableDecl*     → `"var"` **IDENTIFIER** `("=" expression)? ";"` ;
+ *variableDecl*     → `"var"` **IDENTIFIER** `("=" expression)? "**;**"` **;**
  
- *statement*        → `exprStmt` | `printStmt` | `block` | `ifStmt` ;
+ *statement*        → `exprStmt` | `printStmt` | `block` | `ifStmt` **;**
  
- *exprStmt*         → `expression` ";" ;
+ *exprStmt*         → `expression` "**;**" **;**
  
- *printStmt*        → print `expression` ";" ;
+ *printStmt*        → print `expression` "**;**" **;**
  
- *block*            → `"{" (declaration)* "}"` ;
+ *block*            → `"{" (declaration)* "}"` **;**
  
- *ifStmt*           → `"if" "(" expression ")"  statement ("else" statement)?` ;
+ *ifStmt*           → `"if" "(" expression ")"  statement ("else" statement)?` **;**
 
- *whileStmt*        → `"while" "(" expression ")"  statement` ;
+ *whileStmt*        → `"while" "(" expression ")"  statement` **;**
+
+ *forStmt*          → `"for"` "**(**" `(varDecl | exprStmt)` "**;**" `expression`? "**;**" `expression`? "**;**" "**)**"  **;**
 
  
  **A comma expression evaluates to the final expression**
  
- *comma expr*  → `expression , (expression)* | "(" expression ")"`;
+ *comma expr*  → `expression , (expression)* | "(" expression ")"`**;**
 
- *expression*     → `ternary
+ *expression*     → `comma_expression
+                   | ternary
                    | literal
                    | unary
                    | binary
-                   | grouping ;`
+                   | grouping` **;**
 
 
- *expression*  → `ternary`;
+ *expression*  → `ternary`**;**
  
- *ternary*     → `assignment` | `assignment` ? `assignment` : `assignment`;
+ *ternary*     → `assignment` | `assignment` ? `assignment` **:** `assignment`**;**
  
- *assignment*  → `logic_or` | **IDENTIFIER** "=" `ternary`
+ *assignment*  → `logic_or` | **IDENTIFIER** "=" `ternary` **;**
  
- *logic_or*    → `logic_and` ( "or" `logic_and`)* ;
+ *logic_or*    → `logic_and` ( "*or*" `logic_and`)* **;**
  
- *logic_and*   → `equality` ("and" `equality`)* ; 
+ *logic_and*   → `equality` ("*and*" `equality`)* **;** 
 
- *equality*    → `comparsion ("==" | "!=" comparison)*;`
+ *equality*    → `comparsion ("==" | "!=" comparison)*`**;**
 
- *comparison*  → `term ("<="|"<"|">"|">=" term)*;`
+ *comparison*  → `term ("<="|"<"|">"|">=" term)*`**;**
 
- *term*        → `factor ("+"|"-" factor)*;`
+ *term*        → `factor ("+"|"-" factor)*`**;**
 
- *factor*      → `unary (( "%" | "/" | "*" ) unary )*;`
+ *factor*      → `unary (( "%" | "/" | "*" ) unary )*`**;**
 
- *unary*       → `("-" | "!") unary | primary;`
+ *unary*       → `("-" | "!") unary | primary`**;**
 
- *primary*     → `literal | IDENTIFIER | "(" expression ")"`;
+ *primary*     → `literal | IDENTIFIER | "(" expression ")"` **;**
  
- *literal*        → `NUMBER | STRING | "true" | "false" | "nil" ;`
+ *literal*        → `NUMBER | STRING | "true" | "false" | "nil"` **;**
 
- *grouping*       → `"(" expression ")" ;`
+ *grouping*       → `"(" expression ")"` **;**
 
- *unary*          → `( "-" | "!" ) expression ;`
+ *unary*          → `( "-" | "!" ) expression` **;**
 
- *binary*         → `expression operator expression ;`
+ *binary*         → `expression operator expression` **;**
 
  *operator*       → `"==" | "!=" | "<" | "<=" | ">" | ">="
-                  | "+"  | "-"  | "*" | "/" | "%";`
+                  | "+"  | "-"  | "*" | "/" | "%"**;**`
