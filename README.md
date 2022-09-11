@@ -1,6 +1,6 @@
 # Another Lox interpreter 
 
-[Lox grammar primer (incomplete)](./Lox_grammer.md)
+[Lox grammar primer (incomplete)](./Lox_Grammar.md)
 
 The main focus of this project is to understand how compilers work on scanning, parsing, and evaluating ASTs. We follow Robert Nystrom's book, but we also keep in mind rustic idioms and try leverage Rust's language design to our benefit rather than simply translating the Java implementation to Rust. 
 
