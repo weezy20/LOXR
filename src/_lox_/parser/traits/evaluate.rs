@@ -71,6 +71,14 @@ impl<E: Memory> Evaluate<E> for Expression {
             }
             Expression::LogicOr(l) => l.eval(env),
             Expression::LogicAnd(l) => l.eval(env),
+            Expression::Call(c) => {
+                let callee = c.callee.eval(env)?; // Callee is a Lox::Value?
+                let mut args_result : Vec<ValueResult> = vec![];
+                for arg in c.args.iter() {
+                    args_result.push(arg.eval(env));
+                }
+                todo!()
+            },
         }
     }
 }

@@ -32,7 +32,9 @@ pub enum ParserError {
     })]
     IllegalStmt(Option<String>),
     #[error("Invalid assignment target")]
-    InvalidAssignmentTarget
+    InvalidAssignmentTarget,
+    #[error("Cannot accept more than 255 arguments in function call, extra arg: {:?}", _0)]
+    TooManyArgs(Option<Token>)
 }
 
 

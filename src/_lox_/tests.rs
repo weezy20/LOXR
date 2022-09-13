@@ -179,7 +179,7 @@ mod parser_tests {
         // let tokens = setup_lox!("/1+3+4-(3+4)");
         // TODO
         // Note these are entirely different expressions yet the assertion passes if you run this
-        let tokens1 = setup_lox!("1+3+4x(3+4)"); // illegal
+        let tokens1 = setup_lox!("1+3+4(3+4)"); // illegal
         let res1 = Parser::new(tokens1).run();
         let tokens2 = setup_lox!("1+3+4(3+4)"); // illegal
         let res2 = Parser::new(tokens2).run();
@@ -311,6 +311,12 @@ mod parser_tests {
     #[test]
     fn comma_expression_print() {
         let tokens = setup_lox!("1+2, 3-23, 4/5");
+        let res = Parser::new(tokens).run().unwrap();
+        println!("{}", res.print());
+    }
+    #[test]
+    fn function_expression() {
+        let tokens = setup_lox!("call_this(1,4,2))");
         let res = Parser::new(tokens).run().unwrap();
         println!("{}", res.print());
     }

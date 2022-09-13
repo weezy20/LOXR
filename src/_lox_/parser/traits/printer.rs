@@ -40,6 +40,7 @@ impl ExpressionPrinter for Expression {
             Expression::Variable(t) => format!("Variable {t}"),
             Expression::LogicOr(l) => format!("{l}"),
             Expression::LogicAnd(l) => format!("{l}"),
+            Expression::Call(c) => format!("{c}"),
         }
     }
 }

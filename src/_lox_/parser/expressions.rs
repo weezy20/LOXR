@@ -25,6 +25,7 @@ pub enum Expression {
     Variable(Token),
     LogicOr(OrExpr),
     LogicAnd(AndExpr),
+    Call(FnCall),
 }
 
 impl Display for Expression {
@@ -51,8 +52,23 @@ impl Display for Expression {
             Expression::Variable(t) => format!("{t}"),
             Expression::LogicOr(l) => format!("{l}"),
             Expression::LogicAnd(l) => format!("{l}"),
+            Expression::Call(e) => format!("{e}"),
         };
         write!(f, "{out}")
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, derive_more::Display)]
+#[display(fmt = "Function Call to {}({:?})", callee, args)]
+pub struct FnCall {
+    pub callee: Box<Expression>,
+    /// Stores the token ')' to report a runtime err incase of trouble with the function call
+    pub paren: Token,
+    pub args: Vec<Box<Expression>>,
+}
+impl FnCall {
+    pub fn location(&self) -> String {
+        self.paren.location()
     }
 }
 
@@ -103,33 +119,13 @@ impl BinaryExpr {
 }
 impl Display for BinaryExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let left = match &*self.left {
-            Expression::CommaExpr(_) => "CommaExpr".into(),
-            Expression::TernExpr(_) => "TernaryExpr".into(),
-            Expression::BinExpr(_) => "BinExpr".into(),
-            Expression::UnExpr(unary_expr) => format!("{unary_expr}"),
-            Expression::Lit(lit) => lit.inner.lexeme.clone(),
-            Expression::Group(_) => "Grouping".into(),
-            Expression::Error(_) => "ErrorProduction".into(),
-            Expression::Assignment(AssignmentExpr { name, right }) => format!("{name} = {right}"),
-            Expression::Variable(t) => format!("{t}"),
-            Expression::LogicOr(l) => format!("{l}"),
-            Expression::LogicAnd(l) => format!("{l}"),
-        };
-        let right = match &*self.right {
-            Expression::CommaExpr(_) => "CommaExpr".into(),
-            Expression::TernExpr(_) => "TernaryExpr".into(),
-            Expression::BinExpr(_) => "BinExpr".into(),
-            Expression::UnExpr(unary_expr) => format!("{unary_expr}"),
-            Expression::Lit(lit) => format!("{lit}"),
-            Expression::Group(_) => "Grouping".into(),
-            Expression::Error(_) => "ErrorProduction".into(),
-            Expression::Assignment(AssignmentExpr { name, right }) => format!("{name} = {right}"),
-            Expression::Variable(t) => format!("{t}"),
-            Expression::LogicOr(l) => format!("{l}"),
-            Expression::LogicAnd(l) => format!("{l}"),
-        };
-        write!(f, "{left} {op} {right}", op = self.operator.lexeme)
+        write!(
+            f,
+            "{left} {op} {right}",
+            left = self.left,
+            right = self.right,
+            op = self.operator.lexeme
+        )
     }
 }
 
@@ -140,20 +136,12 @@ pub struct UnaryExpr {
 }
 impl Display for UnaryExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let operand = match &*self.operand {
-            Expression::CommaExpr(_)
-            | Expression::TernExpr(_)
-            | Expression::Group(_)
-            | Expression::Error(_)
-            | Expression::UnExpr(_)
-            | Expression::BinExpr(_) => "Expr".into(),
-            Expression::Lit(lit) => format!("{lit}"),
-            Expression::Assignment(AssignmentExpr { name, right }) => format!("{name} = {right}"),
-            Expression::Variable(t) => format!("{t}"),
-            Expression::LogicOr(l) => format!("{l}"),
-            Expression::LogicAnd(l) => format!("{l}"),
-        };
-        write!(f, "{}{operand}", &self.operator.lexeme)
+        write!(
+            f,
+            "{}{operand}",
+            &self.operator.lexeme,
+            operand = self.operand
+        )
     }
 }
 

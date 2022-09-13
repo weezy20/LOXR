@@ -304,12 +304,12 @@ impl Parser {
             expr = Box::new(Expression::BinExpr(BinaryExpr::new(expr, operator, right)));
         }
         if had_binary_expr_err {
-            println!("Recovering..............");
+            eprintln!("{}", "Recovering from malformed binary expr ...".red());
             // return Err(ParserError::ErrorProduction(expr));
         }
         Ok(expr)
     }
-    /// *unary*       → `("-" | "!") unary | primary;`
+    /// *unary*       → `("-" | "!") unary | call;`
     pub fn unary(&mut self) -> Result<Box<Expression>, ParserError> {
         if self.matches(&[MINUS, BANG]) {
             let operator: Token = self
@@ -322,7 +322,54 @@ impl Parser {
                 .expect("Scanner should catch malformed unary expressions"),
             )));
         }
-        self.primary()
+        self.call()
+    }
+    /// *call*        → `primary( "(" arguments? ")" )*` ;
+    /// *arguments*   → expression ( "," expression )* ;
+    /// The rule uses * to allow matching a series of calls like fn(1)(2)(3).
+    pub fn call(&mut self) -> Result<Box<Expression>, ParserError>
+    {
+        let mut expr = self.primary()?;
+        loop {
+            if self.matches(&[LEFT_PAREN])
+            {
+                // The returned expr becomes the new callee expression in case of fn(1)(2)
+                expr = self.finish_call(expr)?;
+            } else {
+                break;
+            }
+        }
+        Ok(expr)
+    }
+    /// Parse arguments
+    fn finish_call(&mut self, callee: Box<Expression>) -> Result<Box<Expression>, ParserError> {
+        let mut args = vec![];
+        if self.matches(&[RIGHT_PAREN])
+        {
+            return Ok(box Expression::Call(FnCall { callee, paren : self.previous.take().expect("Right paren"), args : vec![]}));
+        }
+        loop {
+            if let Some(next) = self.peek() && next.r#type != RIGHT_PAREN {
+                args.push(self.expression()?);
+            }
+            if self.matches(&[COMMA])
+            {
+                if args.len() >= 2 {
+                    if let Some(next) = self.peek().cloned() {
+                    Lox::report_syntax_err(next.ln, next.col, format!("Too many arguments to function, consider removing arguments `{}` and others", next.to_string().bright_yellow()));
+                    // return Err(ParserError::TooManyArgs(self.peek().cloned()))
+                    }
+                }
+                continue;
+            }
+            else if self.matches(&[RIGHT_PAREN])
+            {
+                break;
+            }
+        }
+        if let Some(right_paren) = self.previous.take() && right_paren.r#type == RIGHT_PAREN {
+            return Ok(box Expression::Call(FnCall { callee, paren: right_paren, args }))
+        } Err(ParserError::MissingOperand(RIGHT_PAREN))
     }
     /// *primary*     → `literal | "(" expression ")";`
     /// *literal*     → Number | String | "true" | "false" | "nil" ;
@@ -565,6 +612,7 @@ impl Parser {
     /// Parse as a statement, converting ParserErrors into ErrStmt enclosing the ParserError
     fn statement(&mut self) -> Stmt {
         if self.matches(&[COMMENT, MULTI_LINE_COMMENT]) {
+            loc!("Found a multiline comment");
             return Stmt::Empty;
         }
         let stmt = if self.matches(&[PRINT]) {
@@ -592,6 +640,7 @@ impl Parser {
         match stmt {
             Ok(s) => s,
             Err(err) => {
+                loc!("statement error");
                 self.synchronize();
                 err.into()
             },
@@ -639,7 +688,7 @@ impl Parser {
         };
         let while_loop = Stmt::While { condition: for_condition, body: for_block };
         let for_loop = match initializer {
-            Some(init_expr) => Stmt::Block(vec![init_expr, while_loop]), // BUG: init_expr is not part of a loop environment
+            Some(init_expr) => Stmt::Block(vec![init_expr, while_loop]), 
             None => while_loop,
         };
         Ok(for_loop)

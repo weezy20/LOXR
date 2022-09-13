@@ -84,6 +84,9 @@ mod repl {
                 println!("Exiting Lox interpreter");
                 std::process::exit(0);
             }
+            if input.starts_with("//") || input.starts_with("/*") && input.ends_with("*/") {
+                continue;
+            }
             if let Some(semicolon) = input.chars().last() {
                 if semicolon != ';' && semicolon != '}' {
                     let mut s = input.to_string();

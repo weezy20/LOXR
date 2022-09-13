@@ -191,7 +191,7 @@ impl Interpreter {
                 expr_stmt @ Stmt::ExprStmt(_) => self.execute(expr_stmt, Rc::clone(&self.env), false),
                     Stmt::Print(e) => e.eval(&Rc::clone(&self.env)),
                     Stmt::ErrStmt { message } => {
-                        loc!();
+                        loc!("Err stmt was printed");
                         eprintln!(
                             "{}{}{message}",
                             "Interpreter Error: ".red(),
