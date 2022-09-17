@@ -34,7 +34,8 @@ pub enum ParserError {
     #[error("Invalid assignment target")]
     InvalidAssignmentTarget,
     #[error("Cannot accept more than 255 arguments in function call, extra arg: {:?}", _0)]
-    TooManyArgs(Option<Token>)
+    TooManyArgs(Option<Token>),
+
 }
 
 
@@ -57,6 +58,8 @@ pub enum EvalError {
     VariableEval(RuntimeError),
     #[error("Break cannot be used outside loops")]
     BreakWithout,
+    #[error("Error parsing one of function arguments")]
+    FunctionArgError
 }
 
 #[derive(Error, Debug, PartialEq)]

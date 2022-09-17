@@ -1,14 +1,15 @@
+use std::cell::RefCell;
 use std::cmp::Ordering;
+use std::rc::Rc;
 
 use crate::interpreter::Memory;
 use crate::parser::error::{EvalError, RuntimeError};
 use crate::parser::expressions::*;
-use crate::parser::value::Value;
+use crate::parser::traits::lox_callable::LoxCallable;
+use crate::parser::value::ValueResult;
+use crate::parser::value::{LoxFunction, Value};
 use crate::tokenizer::token_type::TokenType::*;
 use crate::{loc, Lox};
-
-pub type ValueResult = Result<Value, EvalError>;
-
 pub trait Evaluate<E: Memory> {
     fn eval(&self, env: &E) -> ValueResult;
 }
@@ -71,14 +72,32 @@ impl<E: Memory> Evaluate<E> for Expression {
             }
             Expression::LogicOr(l) => l.eval(env),
             Expression::LogicAnd(l) => l.eval(env),
-            Expression::Call(c) => {
-                let callee = c.callee.eval(env)?; // Callee is a Lox::Value?
-                let mut args_result : Vec<ValueResult> = vec![];
-                for arg in c.args.iter() {
+            Expression::Call(FnCallExpr {
+                callee,
+                paren,
+                args,
+            }) => {
+                // We allow for Fn(1)(2)(3).. so the callee for (2) is actually Fn(1) and the callee for (3) is actually Fn(1)(2)
+                let evaluated_callee: Value = callee.eval(env)?;
+                let mut args_result: Vec<ValueResult> = vec![];
+                for arg in args.iter() {
                     args_result.push(arg.eval(env));
                 }
-                todo!()
-            },
+                if args_result.iter().any(|res| res.is_err()) {
+                    return Err(EvalError::FunctionArgError);
+                }
+                let args = args_result
+                    .into_iter()
+                    .map(|x| x.unwrap())
+                    .collect::<Vec<_>>();
+
+                let lox_fn: LoxFunction = LoxFunction {
+                    stack_env: env,
+                    name: "dummy func".to_string(),
+                    args,
+                };
+                <LoxFunction as LoxCallable<E>>::call(&lox_fn, env)
+            }
         }
     }
 }
@@ -87,13 +106,19 @@ impl<E: Memory> Evaluate<E> for Expression {
 // https://doc.rust-lang.org/reference/expressions/operator-expr.html#lazy-boolean-operators
 impl<E: Memory> Evaluate<E> for AndExpr {
     fn eval(&self, env: &E) -> ValueResult {
-        Ok((self.left.eval(env)?.is_truthy() && self.right.eval(env)?.is_truthy()).into())
+        Ok(
+            (self.left.eval(env)?.is_truthy() && self.right.eval(env)?.is_truthy())
+                .into(),
+        )
     }
 }
 impl<E: Memory> Evaluate<E> for OrExpr {
     fn eval(&self, env: &E) -> ValueResult {
         // Ok((self.left.eval(env)?.is_truthy() || panic!("cannot panic this if left true")).into())
-        Ok((self.left.eval(env)?.is_truthy() || self.right.eval(env)?.is_truthy()).into())
+        Ok(
+            (self.left.eval(env)?.is_truthy() || self.right.eval(env)?.is_truthy())
+                .into(),
+        )
     }
 }
 
@@ -251,7 +276,9 @@ impl<E: Memory> Evaluate<E> for BinaryExpr {
                 )),
             },
             GREATER_EQUAL => match left.partial_cmp(&right) {
-                Some(o) => Ok(Value::from(o == Ordering::Greater || o == Ordering::Equal)),
+                Some(o) => {
+                    Ok(Value::from(o == Ordering::Greater || o == Ordering::Equal))
+                }
                 None => Err(EvalError::InvalidExpr(
                     err_exp,
                     Some(format!("Cannot compare {left:?} with {right:?}")),

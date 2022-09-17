@@ -330,23 +330,23 @@ impl Parser {
     pub fn call(&mut self) -> Result<Box<Expression>, ParserError>
     {
         let mut expr = self.primary()?;
-        loop {
+        'nested_calls : loop {
             if self.matches(&[LEFT_PAREN])
             {
                 // The returned expr becomes the new callee expression in case of fn(1)(2)
                 expr = self.finish_call(expr)?;
             } else {
-                break;
+                break 'nested_calls;
             }
         }
         Ok(expr)
     }
-    /// Parse arguments
+    /// Parse function call arguments
     fn finish_call(&mut self, callee: Box<Expression>) -> Result<Box<Expression>, ParserError> {
         let mut args = vec![];
         if self.matches(&[RIGHT_PAREN])
         {
-            return Ok(box Expression::Call(FnCall { callee, paren : self.previous.take().expect("Right paren"), args : vec![]}));
+            return Ok(box Expression::Call(FnCallExpr { callee, paren : self.previous.take().expect("Right paren"), args : vec![]}));
         }
         loop {
             if let Some(next) = self.peek() && next.r#type != RIGHT_PAREN {
@@ -354,7 +354,7 @@ impl Parser {
             }
             if self.matches(&[COMMA])
             {
-                if args.len() >= 2 {
+                if args.len() > 254 {
                     if let Some(next) = self.peek().cloned() {
                     Lox::report_syntax_err(next.ln, next.col, format!("Too many arguments to function, consider removing arguments `{}` and others", next.to_string().bright_yellow()));
                     // return Err(ParserError::TooManyArgs(self.peek().cloned()))
@@ -368,7 +368,7 @@ impl Parser {
             }
         }
         if let Some(right_paren) = self.previous.take() && right_paren.r#type == RIGHT_PAREN {
-            return Ok(box Expression::Call(FnCall { callee, paren: right_paren, args }))
+            return Ok(box Expression::Call(FnCallExpr { callee, paren: right_paren, args }))
         } Err(ParserError::MissingOperand(RIGHT_PAREN))
     }
     /// *primary*     → `literal | "(" expression ")";`

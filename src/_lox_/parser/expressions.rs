@@ -1,5 +1,4 @@
-use std::fmt::Display;
-
+use derive_more::Display;
 use crate::tokenizer::token::Token;
 use crate::tokenizer::token_type::TokenType;
 
@@ -25,10 +24,10 @@ pub enum Expression {
     Variable(Token),
     LogicOr(OrExpr),
     LogicAnd(AndExpr),
-    Call(FnCall),
+    Call(FnCallExpr),
 }
 
-impl Display for Expression {
+impl std::fmt::Display for Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Print display for variants which have the display method otherwise fallback to debug print
         let out = match &self {
@@ -48,7 +47,9 @@ impl Display for Expression {
             Expression::TernExpr(x) => format!("{x:?}"),
             Expression::Group(x) => format!("{x:?}"),
             Expression::Error(x) => format!("{x:?}"),
-            Expression::Assignment(AssignmentExpr { name, right }) => format!("{name} = {right}"),
+            Expression::Assignment(AssignmentExpr { name, right }) => {
+                format!("{name} = {right}")
+            }
             Expression::Variable(t) => format!("{t}"),
             Expression::LogicOr(l) => format!("{l}"),
             Expression::LogicAnd(l) => format!("{l}"),
@@ -58,28 +59,31 @@ impl Display for Expression {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, derive_more::Display)]
+#[derive(Debug, PartialEq, Clone, Display)]
 #[display(fmt = "Function Call to {}({:?})", callee, args)]
-pub struct FnCall {
+pub struct FnCallExpr {
+    /// Since callee is a Box<Expression> it allows for multiple calls 
+    /// to be chained Fn(a,b)(2,3,5) such that the callee to (2,3,5) is 
+    /// Fn(a,b) which will be evaluated first before being assigned as a callee
     pub callee: Box<Expression>,
     /// Stores the token ')' to report a runtime err incase of trouble with the function call
     pub paren: Token,
     pub args: Vec<Box<Expression>>,
 }
-impl FnCall {
+impl FnCallExpr {
     pub fn location(&self) -> String {
         self.paren.location()
     }
 }
 
-#[derive(Debug, PartialEq, Clone, derive_more::Display)]
+#[derive(Debug, PartialEq, Clone, Display)]
 #[display(fmt = "LogicalAnd(Left [{}] and Right [{}])", left, right)]
 pub struct AndExpr {
     pub left: Box<Expression>,
     pub operator: Token, // type AND
     pub right: Box<Expression>,
 }
-#[derive(Debug, PartialEq, Clone, derive_more::Display)]
+#[derive(Debug, PartialEq, Clone, Display)]
 #[display(fmt = "LogicalOr(Left [{}] or Right [{}])", left, right)]
 pub struct OrExpr {
     pub left: Box<Expression>,
@@ -101,7 +105,8 @@ pub struct TernaryExpr {
     pub if_false: Box<Expression>,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Display)]
+#[display(fmt = "{left} {operator} {right}")]
 pub struct BinaryExpr {
     pub left: Box<Expression>,
     pub operator: Token,
@@ -117,32 +122,13 @@ impl BinaryExpr {
         }
     }
 }
-impl Display for BinaryExpr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{left} {op} {right}",
-            left = self.left,
-            right = self.right,
-            op = self.operator.lexeme
-        )
-    }
-}
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Display)]
+#[display(fmt = "{operator}{operand}")]
+
 pub struct UnaryExpr {
     pub operator: Token,
     pub operand: Box<Expression>,
-}
-impl Display for UnaryExpr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}{operand}",
-            &self.operator.lexeme,
-            operand = self.operand
-        )
-    }
 }
 
 impl UnaryExpr {
@@ -157,15 +143,13 @@ impl UnaryExpr {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Default)]
+#[derive(Debug, PartialEq, Clone, Default, Display)]
+#[display(fmt = "{inner}")]
+
 pub struct Literal {
     pub inner: Token,
 }
-impl Display for Literal {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", &self.inner.lexeme)
-    }
-}
+
 impl Literal {
     pub fn new(inner: Token) -> Result<Self, String> {
         let token_type = inner.r#type;
@@ -203,16 +187,20 @@ mod test {
         let _expression = " 1 + (2 - (4 / 5))";
         let (line_number, col) = (1, 1);
         let one = Expression::Lit(
-            Literal::new(Token::new(TokenType::NUMBER, "1".into(), line_number, col)).unwrap(),
+            Literal::new(Token::new(TokenType::NUMBER, "1".into(), line_number, col))
+                .unwrap(),
         );
         let two = Expression::Lit(
-            Literal::new(Token::new(TokenType::NUMBER, "2".into(), line_number, col)).unwrap(),
+            Literal::new(Token::new(TokenType::NUMBER, "2".into(), line_number, col))
+                .unwrap(),
         );
         let four = Expression::Lit(
-            Literal::new(Token::new(TokenType::NUMBER, "4".into(), line_number, col)).unwrap(),
+            Literal::new(Token::new(TokenType::NUMBER, "4".into(), line_number, col))
+                .unwrap(),
         );
         let five = Expression::Lit(
-            Literal::new(Token::new(TokenType::NUMBER, "5".into(), line_number, col)).unwrap(),
+            Literal::new(Token::new(TokenType::NUMBER, "5".into(), line_number, col))
+                .unwrap(),
         );
         let group45 = Expression::Group(Grouping {
             inner: Box::new(Expression::BinExpr(BinaryExpr {
