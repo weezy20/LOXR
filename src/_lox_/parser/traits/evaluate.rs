@@ -74,12 +74,20 @@ impl Evaluate for Expression {
             }
             Expression::LogicOr(l) => l.eval(env),
             Expression::LogicAnd(l) => l.eval(env),
-            Expression::Call(FnCallExpr {
-                callee,
-                paren,
-                args,
-            }) => {
+            Expression::Call(
+                fncallexpr @ FnCallExpr {
+                    callee,
+                    paren: _, // TODO: use this for error reporting
+                    args,
+                },
+            ) => {
                 // We allow for Fn(1)(2)(3).. so the callee for (2) is actually Fn(1) and the callee for (3) is actually Fn(1)(2)
+
+                // TODO : In case of an indentifier or Variable(Token), what modifications
+                // should we make to Variable(Token)'s evaluation implementation for this
+                // to work correctly?
+
+                // For now, we stay consistent with our overall pattern and "eval" whatever the callee expression is
                 let evaluated_callee: Value = callee.eval(env)?;
                 let mut args_result: Vec<ValueResult> = vec![];
                 for arg in args.iter() {
@@ -93,12 +101,11 @@ impl Evaluate for Expression {
                     .map(|x| x.unwrap())
                     .collect::<Vec<_>>();
 
-                let lox_fn: LoxFunction = LoxFunction {
-                    stack_env: Rc::clone(&env),
-                    name: "dummy func".to_string(),
-                    args,
-                };
-                <LoxFunction as LoxCallable>::call(&lox_fn, env)
+                if let Value::Function(lox_fn) = evaluated_callee {
+                    <LoxFunction as LoxCallable>::call(&lox_fn, args, env)
+                } else {
+                    return Err(EvalError::FunctionCallError(fncallexpr.location()));
+                }
             }
         }
     }

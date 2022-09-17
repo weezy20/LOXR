@@ -4,6 +4,8 @@ use crate::tokenizer::token_type::TokenType;
 use thiserror::Error;
 use colored::Colorize;
 
+use super::expressions::FnCallExpr;
+
 #[allow(unused)]
 #[derive(Error, Debug, PartialEq)]
 pub enum ParserError {
@@ -59,7 +61,9 @@ pub enum EvalError {
     #[error("Break cannot be used outside loops")]
     BreakWithout,
     #[error("Error parsing one of function arguments")]
-    FunctionArgError
+    FunctionArgError,
+    #[error("Error calling function at {}", _0)]
+    FunctionCallError(String),
 }
 
 #[derive(Error, Debug, PartialEq)]

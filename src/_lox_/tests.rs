@@ -316,7 +316,8 @@ mod parser_tests {
     }
     #[test]
     fn function_expression() {
-        let tokens = setup_lox!("call_this(1,4,2))");
+        // let tokens = setup_lox!("first()(data))");
+        let tokens = setup_lox!("first()");
         let res = Parser::new(tokens).run().unwrap();
         println!("{}", res.print());
     }

@@ -1,3 +1,3 @@
 pub mod printer;
 pub mod evaluate;
-mod lox_callable;
+pub mod lox_callable;

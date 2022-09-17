@@ -60,9 +60,11 @@ impl std::fmt::Display for Expression {
 }
 
 #[derive(Debug, PartialEq, Clone, Display)]
-#[display(fmt = "Function Call to {}({:?})", callee, args)]
+#[display(fmt = "|Function Call to -> {:?} Args -> ({:?})|", callee, args)]
 pub struct FnCallExpr {
-    /// Since callee is a Box<Expression> it allows for multiple calls 
+    /// Typically one would expect a function call to look like `some_var_name(..args?)`
+    /// Where some_var_name is a Variable token. But since 
+    /// callee is a Box<Expression> it allows for multiple calls 
     /// to be chained Fn(a,b)(2,3,5) such that the callee to (2,3,5) is 
     /// Fn(a,b) which will be evaluated first before being assigned as a callee
     pub callee: Box<Expression>,
