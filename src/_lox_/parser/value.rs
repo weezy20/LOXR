@@ -64,6 +64,7 @@ impl std::fmt::Display for Value {
             Value::String(x) => write!(f, "\"{x}\""),
             Value::Nil => write!(f, "Nil"),
             Value::Break => write!(f, "BreakValue"),
+            Value::Function(_) => todo!(),
         }
     }
 }

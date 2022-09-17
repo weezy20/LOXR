@@ -2,8 +2,8 @@ use crate::loc;
 use crate::parser::error::{RuntimeError, EvalError};
 use crate::parser::{
     statement::Stmt,
-    traits::evaluate::{Evaluate, ValueResult},
-    value::Value,
+    traits::evaluate::Evaluate,
+    value::{Value, ValueResult},
     Parser,
 };
 use crate::tokenizer::token::Token;

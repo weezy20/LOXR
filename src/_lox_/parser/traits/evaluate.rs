@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::rc::Rc;
 
-use crate::interpreter::Memory;
+use crate::interpreter::{Environment, Memory};
 use crate::parser::error::{EvalError, RuntimeError};
 use crate::parser::expressions::*;
 use crate::parser::traits::lox_callable::LoxCallable;
@@ -10,12 +10,14 @@ use crate::parser::value::ValueResult;
 use crate::parser::value::{LoxFunction, Value};
 use crate::tokenizer::token_type::TokenType::*;
 use crate::{loc, Lox};
-pub trait Evaluate<E: Memory> {
-    fn eval(&self, env: &E) -> ValueResult;
+pub trait Evaluate {
+    type Environment: Memory;
+    fn eval(&self, env: &Self::Environment) -> ValueResult;
 }
 
-impl<E: Memory> Evaluate<E> for Expression {
-    fn eval(&self, env: &E) -> ValueResult {
+impl Evaluate for Expression {
+    type Environment = Rc<RefCell<Environment>>;
+    fn eval(&self, env: &Self::Environment) -> ValueResult {
         match self {
             Expression::CommaExpr(expr_list) => {
                 // Comma expressions evaluate the list, discarding all results uptil the last one
@@ -92,11 +94,11 @@ impl<E: Memory> Evaluate<E> for Expression {
                     .collect::<Vec<_>>();
 
                 let lox_fn: LoxFunction = LoxFunction {
-                    stack_env: env,
+                    stack_env: Rc::clone(&env),
                     name: "dummy func".to_string(),
                     args,
                 };
-                <LoxFunction as LoxCallable<E>>::call(&lox_fn, env)
+                <LoxFunction as LoxCallable>::call(&lox_fn, env)
             }
         }
     }
@@ -104,16 +106,19 @@ impl<E: Memory> Evaluate<E> for Expression {
 // logical operators short circuit in rust so we can make use of that
 // https://stackoverflow.com/questions/53644809/do-logical-operators-short-circuit-in-rust
 // https://doc.rust-lang.org/reference/expressions/operator-expr.html#lazy-boolean-operators
-impl<E: Memory> Evaluate<E> for AndExpr {
-    fn eval(&self, env: &E) -> ValueResult {
+impl Evaluate for AndExpr {
+    type Environment = Rc<RefCell<Environment>>;
+    fn eval(&self, env: &Self::Environment) -> ValueResult {
         Ok(
             (self.left.eval(env)?.is_truthy() && self.right.eval(env)?.is_truthy())
                 .into(),
         )
     }
 }
-impl<E: Memory> Evaluate<E> for OrExpr {
-    fn eval(&self, env: &E) -> ValueResult {
+impl Evaluate for OrExpr {
+    type Environment = Rc<RefCell<Environment>>;
+
+    fn eval(&self, env: &Self::Environment) -> ValueResult {
         // Ok((self.left.eval(env)?.is_truthy() || panic!("cannot panic this if left true")).into())
         Ok(
             (self.left.eval(env)?.is_truthy() || self.right.eval(env)?.is_truthy())
@@ -122,8 +127,10 @@ impl<E: Memory> Evaluate<E> for OrExpr {
     }
 }
 
-impl<E: Memory> Evaluate<E> for AssignmentExpr {
-    fn eval(&self, env: &E) -> ValueResult {
+impl Evaluate for AssignmentExpr {
+    type Environment = Rc<RefCell<Environment>>;
+
+    fn eval(&self, env: &Self::Environment) -> ValueResult {
         let (name, right) = (&self.name.lexeme, &self.right);
         let rval = right.eval(env)?;
         /*.map_err(|eval_err| {
@@ -145,8 +152,10 @@ impl<E: Memory> Evaluate<E> for AssignmentExpr {
     }
 }
 
-impl<E: Memory> Evaluate<E> for TernaryExpr {
-    fn eval(&self, env: &E) -> ValueResult {
+impl Evaluate for TernaryExpr {
+    type Environment = Rc<RefCell<Environment>>;
+
+    fn eval(&self, env: &Self::Environment) -> ValueResult {
         // TernaryExpr { condition : Box<expr> , if_true : Box<expr>, if_false : Box<expr> }
         let condition = self.condition.eval(env)?;
         let condition = condition.is_truthy();
@@ -155,8 +164,10 @@ impl<E: Memory> Evaluate<E> for TernaryExpr {
     }
 }
 
-impl<E: Memory> Evaluate<E> for BinaryExpr {
-    fn eval(&self, env: &E) -> ValueResult {
+impl Evaluate for BinaryExpr {
+    type Environment = Rc<RefCell<Environment>>;
+
+    fn eval(&self, env: &Self::Environment) -> ValueResult {
         let err_exp = Expression::BinExpr(self.clone());
         let left = self.left.eval(env)?;
         let right = self.right.eval(env)?;
@@ -317,8 +328,10 @@ impl<E: Memory> Evaluate<E> for BinaryExpr {
     }
 }
 
-impl<E: Memory> Evaluate<E> for UnaryExpr {
-    fn eval(&self, env: &E) -> ValueResult {
+impl Evaluate for UnaryExpr {
+    type Environment = Rc<RefCell<Environment>>;
+
+    fn eval(&self, env: &Self::Environment) -> ValueResult {
         let right = self.operand.eval(env)?;
         let result = match self.operator.r#type {
             BANG => Value::Bool(!right.is_truthy()),
@@ -342,8 +355,10 @@ impl<E: Memory> Evaluate<E> for UnaryExpr {
     }
 }
 
-impl<E: Memory> Evaluate<E> for Literal {
-    fn eval(&self, _env: &E) -> ValueResult {
+impl Evaluate for Literal {
+    type Environment = Rc<RefCell<Environment>>;
+
+    fn eval(&self, _env: &Self::Environment) -> ValueResult {
         match self.inner.r#type {
             STRING => Ok(self.inner.lexeme.clone().into()),
             NUMBER => {
@@ -360,8 +375,10 @@ impl<E: Memory> Evaluate<E> for Literal {
     }
 }
 
-impl<E: Memory> Evaluate<E> for Grouping {
-    fn eval(&self, env: &E) -> ValueResult {
+impl Evaluate for Grouping {
+    type Environment = Rc<RefCell<Environment>>;
+
+    fn eval(&self, env: &Self::Environment) -> ValueResult {
         self.inner.eval(env)
     }
 }
