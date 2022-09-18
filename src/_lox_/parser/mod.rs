@@ -8,7 +8,7 @@
 //! function         → IDENTIFIER "(" params? ")" block;
 //! params           → IDENTIFIER ( "," IDENTIFIER )* ;
 //! 
-//! statement        → `variableDecl`| `exprStmt` | printStmt | block | ifstmt ;
+//! statement        → `variableDecl`| `exprStmt` | `printStmt` | `block` | `ifstmt` ;
 //! exprStmt         → `expression` ";" ;
 //! printStmt        → print `expression` ";" ;
 //! block            → "{" declaration* "}" ;
@@ -72,6 +72,7 @@ use crate::tokenizer::token_type::TokenType::{self, *};
 use crate::loc;
 use better_peekable::{BPeekable, BetterPeekable};
 use expressions::Expression;
+use std::rc::Rc;
 use std::vec::IntoIter;
 use self::error::ParserError;
 use self::statement::Stmt;
@@ -587,9 +588,67 @@ impl Parser {
                     d // due to this rust can infer the type and use it in the above macro
                 },
             }
-        } else {
+        } 
+        else if self.matches(&[FUN]) {
+            self.function_declaration()
+        }
+        else {
             self.statement().into()
         }
+    }
+    /// funDecl          → "fun" function ; 
+    /// params           → IDENTIFIER ( "," IDENTIFIER )* ;
+    fn function_declaration(&mut self) -> Stmt {
+        let stmt = self.function();
+        match stmt {
+            Ok(s) => s,
+            Err(err) => {
+                loc!("statement error");
+                self.synchronize();
+                err.into()
+            },
+        }
+    }
+    /// function         → IDENTIFIER "(" params? ")" block;
+    fn function(&mut self) -> Result<Stmt, ParserError> {
+        if self.matches(&[IDENTIFIER]) {
+            let ident = self.previous.take().expect("matches is infallible");
+            Ok(Stmt::FunDecl { ident, params: self.params()?, body : if self.matches(&[LEFT_BRACE]) {
+                    Rc::new(self.block_statement()?)
+                }
+                else {
+                    return Err(ParserError::InvalidFuncDecl);
+                }
+            })
+        } else {
+            Err(ParserError::InvalidFuncDecl)
+        }
+    }
+    fn params(&mut self) -> Result<Vec<Token>, ParserError> {
+        let mut params = vec![];
+        self.consume(LEFT_PAREN)?;
+        loop {
+            // We don't want a keyword as a fn param
+            params.push(self.consume(IDENTIFIER)?.ok_or_else(|| ParserError::InvalidFuncDecl)?);
+            if params.len() > 254 {
+                let ref last = params[params.len()-1];
+                Lox::report_syntax_err(last.ln, last.col, "Too many arguments to function".to_string());
+                // Relax this to continue parsing in case of too many args
+                return Err(ParserError::TooManyArgs(Some(last.clone())));
+            }
+            if self.matches(&[COMMA])
+            {
+                continue;
+            }
+            else if self.matches(&[RIGHT_PAREN])
+            {
+                break;
+            }
+            else {
+                return Err(ParserError::InvalidFuncArgs);
+            }
+        }
+        Ok(params)
     }
     fn var_declaration(&mut self) -> Result<Stmt, ParserError> {
         if self.matches(&[IDENTIFIER])  {

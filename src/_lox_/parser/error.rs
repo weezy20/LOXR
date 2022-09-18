@@ -4,8 +4,6 @@ use crate::tokenizer::token_type::TokenType;
 use thiserror::Error;
 use colored::Colorize;
 
-use super::expressions::FnCallExpr;
-
 #[allow(unused)]
 #[derive(Error, Debug, PartialEq)]
 pub enum ParserError {
@@ -37,7 +35,10 @@ pub enum ParserError {
     InvalidAssignmentTarget,
     #[error("Cannot accept more than 255 arguments in function call, extra arg: {:?}", _0)]
     TooManyArgs(Option<Token>),
-
+    #[error("Invalid function declaration, expected identifier")]
+    InvalidFuncDecl,
+    #[error("Invalid function arguments")]
+    InvalidFuncArgs,
 }
 
 
@@ -60,6 +61,8 @@ pub enum EvalError {
     VariableEval(RuntimeError),
     #[error("Break cannot be used outside loops")]
     BreakWithout,
+    #[error("{0}")]
+    FunctionUndefined(RuntimeError),
     #[error("Error parsing one of function arguments")]
     FunctionArgError,
     #[error("Error calling function at {}", _0)]
@@ -73,5 +76,7 @@ pub enum RuntimeError {
     #[error("Uncaught reference: {} at [{}] ", _1, _0.location().bright_yellow())]
     UncaughtReference(Token, String),
     #[error("Variable '{}' not declared before use ", _0.bright_yellow().bold())]
-    UndefinedVar(String)
+    UndefinedVar(String),
+    #[error("Function '{}' not declared before use ", _0.bright_yellow().bold())]
+    UndefinedFunc(String),
 }

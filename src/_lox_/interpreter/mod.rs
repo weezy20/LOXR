@@ -198,7 +198,12 @@ impl Interpreter {
             } else {
                 Ok(Value::Break)
             },
-            Stmt::FunDecl => todo!(),
+            Stmt::FunDecl { ident, params, body } => {
+                let lox_fn = LoxFunction { stack_env: Rc::clone(&rc_env), ident: ident.to_owned(), arity: params.len(), body: Rc::clone(&body) };
+                rc_env.define(&ident.lexeme, Value::Function(Rc::new(lox_fn)));
+                println!("fn declared <{}>", ident.lexeme);
+                Ok(Value::Nil)
+            },
         }
         // Ok(Value::Nil)
     }
@@ -258,7 +263,7 @@ impl Interpreter {
                 Stmt::Break => {
                     Err(EvalError::BreakWithout)
                 },
-                Stmt::FunDecl => todo!(),
+                fn_decl @ Stmt::FunDecl { .. } => self.execute(fn_decl, Rc::clone(&self.env), false),
                 
             };
             match val {

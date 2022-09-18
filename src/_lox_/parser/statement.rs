@@ -1,13 +1,17 @@
 use super::*;
 use derive_more::Display;
-#[derive(Debug, Display, Clone)]
+#[derive(Debug, Display, Clone, PartialEq)]
 /// A statement has side effects that may affect the `state` a lox program is in
 /// A statement is always followed by a `;`.
 /// A lox program is made up of lox statements
 #[display(fmt = "{}")]
 pub enum Stmt {
     #[display(fmt = "FunDecl IDENTIFER")]
-    FunDecl,
+    FunDecl {
+        ident : Token, 
+        params: Vec<Token>,
+        body : std::rc::Rc<Stmt>,
+    },
     #[display(fmt = "VarDecl IDENTIFER : '{}', Expression : {:?}", name, initializer)]
     VarDecl {
         name: String,

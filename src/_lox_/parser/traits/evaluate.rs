@@ -90,7 +90,31 @@ impl Evaluate for Expression {
                 // to work correctly?
 
                 // For now, we stay consistent with our overall pattern and "eval" whatever the callee expression is
-                let evaluated_callee: Value = callee.eval(env)?;
+                let evaluated_callee: Value = if let Expression::Variable(ident) = &**callee {
+                    let lox_fn = match env.get(&ident) {
+                        // Ok expects a LoxFunction to be defined at this ident key
+                        Ok(v) => {
+                            if let Some(x) = v {
+                                Ok(x.to_owned())
+                            } else {
+                                // Ok(None) means variable was found in storage, but not initialized therefore it's an error
+                                // to use it before initialization
+                                // Note: This cannot happen for functions as they are declared and defined at one go
+                                panic!("ICE: Functions cannot be declared but not defined");
+                            }
+                        }
+                        // undefined
+                        Err(_err) => {
+                            loc!(format!("Error on function.eval() {_err}"));
+                            Err(EvalError::FunctionUndefined(RuntimeError::UndefinedFunc(
+                                ident.lexeme.clone(),
+                            )))
+                        }
+                    };
+                    lox_fn?
+                } else {
+                    callee.eval(env)?
+                };
                 let mut args_result: Vec<ValueResult> = vec![];
                 for arg in args.iter() {
                     args_result.push(arg.eval(env));
@@ -126,10 +150,7 @@ impl Evaluate for Expression {
 impl Evaluate for AndExpr {
     type Environment = LoxEnvironment;
     fn eval(&self, env: &Self::Environment) -> ValueResult {
-        Ok(
-            (self.left.eval(env)?.is_truthy() && self.right.eval(env)?.is_truthy())
-                .into(),
-        )
+        Ok((self.left.eval(env)?.is_truthy() && self.right.eval(env)?.is_truthy()).into())
     }
 }
 impl Evaluate for OrExpr {
@@ -137,10 +158,7 @@ impl Evaluate for OrExpr {
 
     fn eval(&self, env: &Self::Environment) -> ValueResult {
         // Ok((self.left.eval(env)?.is_truthy() || panic!("cannot panic this if left true")).into())
-        Ok(
-            (self.left.eval(env)?.is_truthy() || self.right.eval(env)?.is_truthy())
-                .into(),
-        )
+        Ok((self.left.eval(env)?.is_truthy() || self.right.eval(env)?.is_truthy()).into())
     }
 }
 
@@ -304,9 +322,7 @@ impl Evaluate for BinaryExpr {
                 )),
             },
             GREATER_EQUAL => match left.partial_cmp(&right) {
-                Some(o) => {
-                    Ok(Value::from(o == Ordering::Greater || o == Ordering::Equal))
-                }
+                Some(o) => Ok(Value::from(o == Ordering::Greater || o == Ordering::Equal)),
                 None => Err(EvalError::InvalidExpr(
                     err_exp,
                     Some(format!("Cannot compare {left:?} with {right:?}")),

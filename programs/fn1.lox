@@ -1,0 +1,6 @@
+fun print_me(what) {
+    print "function <print_me> called";
+    print what;
+}
+
+print_me(1);

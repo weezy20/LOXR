@@ -115,6 +115,8 @@ pub struct LoxFunction {
     /// Let's just consider every function to be identified by a token
     pub ident: Token,
     pub arity: usize,
+    /// Always constructed to be a Stmt::Block
+    pub body: Rc<crate::parser::statement::Stmt>,
 }
 /// Since LoxFunction is a special value that can be called, we express that through this trait
 impl LoxCallable for LoxFunction {
