@@ -6,6 +6,8 @@ use derive_more::Display;
 /// A lox program is made up of lox statements
 #[display(fmt = "{}")]
 pub enum Stmt {
+    #[display(fmt = "FunDecl IDENTIFER")]
+    FunDecl,
     #[display(fmt = "VarDecl IDENTIFER : '{}', Expression : {:?}", name, initializer)]
     VarDecl {
         name: String,

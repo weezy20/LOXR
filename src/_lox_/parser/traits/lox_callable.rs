@@ -1,9 +1,12 @@
-use crate::interpreter::Memory;
-use crate::parser::value::{ValueResult, Value};
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use crate::interpreter::Environment;
+use crate::parser::value::{Value, ValueResult};
 
 /// Some type that can be called like classes or functions
 /// Requires an environment to evaluate expressions
-pub trait LoxCallable {
-    type Environment: Memory;
-    fn call(&self, args : Vec<Value>, env: &Self::Environment) -> ValueResult;
+pub trait LoxCallable: std::fmt::Debug {
+    fn call(&self, args: Vec<Value>, env: Rc<RefCell<Environment>>) -> ValueResult;
+    fn arity(&self) -> usize;
 }

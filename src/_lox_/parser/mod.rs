@@ -4,6 +4,10 @@
 //! We may declare a variable or declare and assign the result of some expression to it
 //! variableDecl     → "var" IDENTIFIER ("=" expression)? ";" ;
 //! 
+//! funDecl          → "fun" function ; 
+//! function         → IDENTIFIER "(" params? ")" block;
+//! params           → IDENTIFIER ( "," IDENTIFIER )* ;
+//! 
 //! statement        → `variableDecl`| `exprStmt` | printStmt | block | ifstmt ;
 //! exprStmt         → `expression` ";" ;
 //! printStmt        → print `expression` ";" ;

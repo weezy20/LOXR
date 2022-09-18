@@ -15,8 +15,10 @@ pub trait Evaluate {
     fn eval(&self, env: &Self::Environment) -> ValueResult;
 }
 
+type LoxEnvironment = Rc<RefCell<Environment>>;
+
 impl Evaluate for Expression {
-    type Environment = Rc<RefCell<Environment>>;
+    type Environment = LoxEnvironment;
     fn eval(&self, env: &Self::Environment) -> ValueResult {
         match self {
             Expression::CommaExpr(expr_list) => {
@@ -102,7 +104,15 @@ impl Evaluate for Expression {
                     .collect::<Vec<_>>();
 
                 if let Value::Function(lox_fn) = evaluated_callee {
-                    <LoxFunction as LoxCallable>::call(&lox_fn, args, env)
+                    if lox_fn.arity() != args.len() {
+                        Lox::report_runtime_err(format!(
+                            "Expected {} but got {} arguments",
+                            lox_fn.arity(),
+                            args.len()
+                        ));
+                        return Err(EvalError::FunctionArgError);
+                    }
+                    lox_fn.call(args, Rc::clone(&env))
                 } else {
                     return Err(EvalError::FunctionCallError(fncallexpr.location()));
                 }
@@ -114,7 +124,7 @@ impl Evaluate for Expression {
 // https://stackoverflow.com/questions/53644809/do-logical-operators-short-circuit-in-rust
 // https://doc.rust-lang.org/reference/expressions/operator-expr.html#lazy-boolean-operators
 impl Evaluate for AndExpr {
-    type Environment = Rc<RefCell<Environment>>;
+    type Environment = LoxEnvironment;
     fn eval(&self, env: &Self::Environment) -> ValueResult {
         Ok(
             (self.left.eval(env)?.is_truthy() && self.right.eval(env)?.is_truthy())
@@ -123,7 +133,7 @@ impl Evaluate for AndExpr {
     }
 }
 impl Evaluate for OrExpr {
-    type Environment = Rc<RefCell<Environment>>;
+    type Environment = LoxEnvironment;
 
     fn eval(&self, env: &Self::Environment) -> ValueResult {
         // Ok((self.left.eval(env)?.is_truthy() || panic!("cannot panic this if left true")).into())
@@ -135,7 +145,7 @@ impl Evaluate for OrExpr {
 }
 
 impl Evaluate for AssignmentExpr {
-    type Environment = Rc<RefCell<Environment>>;
+    type Environment = LoxEnvironment;
 
     fn eval(&self, env: &Self::Environment) -> ValueResult {
         let (name, right) = (&self.name.lexeme, &self.right);
@@ -160,7 +170,7 @@ impl Evaluate for AssignmentExpr {
 }
 
 impl Evaluate for TernaryExpr {
-    type Environment = Rc<RefCell<Environment>>;
+    type Environment = LoxEnvironment;
 
     fn eval(&self, env: &Self::Environment) -> ValueResult {
         // TernaryExpr { condition : Box<expr> , if_true : Box<expr>, if_false : Box<expr> }
@@ -172,7 +182,7 @@ impl Evaluate for TernaryExpr {
 }
 
 impl Evaluate for BinaryExpr {
-    type Environment = Rc<RefCell<Environment>>;
+    type Environment = LoxEnvironment;
 
     fn eval(&self, env: &Self::Environment) -> ValueResult {
         let err_exp = Expression::BinExpr(self.clone());
@@ -336,7 +346,7 @@ impl Evaluate for BinaryExpr {
 }
 
 impl Evaluate for UnaryExpr {
-    type Environment = Rc<RefCell<Environment>>;
+    type Environment = LoxEnvironment;
 
     fn eval(&self, env: &Self::Environment) -> ValueResult {
         let right = self.operand.eval(env)?;
@@ -363,7 +373,7 @@ impl Evaluate for UnaryExpr {
 }
 
 impl Evaluate for Literal {
-    type Environment = Rc<RefCell<Environment>>;
+    type Environment = LoxEnvironment;
 
     fn eval(&self, _env: &Self::Environment) -> ValueResult {
         match self.inner.r#type {
@@ -383,7 +393,7 @@ impl Evaluate for Literal {
 }
 
 impl Evaluate for Grouping {
-    type Environment = Rc<RefCell<Environment>>;
+    type Environment = LoxEnvironment;
 
     fn eval(&self, env: &Self::Environment) -> ValueResult {
         self.inner.eval(env)

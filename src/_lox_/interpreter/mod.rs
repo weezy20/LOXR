@@ -1,5 +1,7 @@
 use crate::loc;
 use crate::parser::error::{RuntimeError, EvalError};
+use crate::parser::traits::lox_callable::LoxCallable;
+use crate::parser::value::LoxFunction;
 use crate::parser::{
     statement::Stmt,
     traits::evaluate::Evaluate,
@@ -16,6 +18,9 @@ pub use environment::Environment;
 #[derive(Default, Debug)]
 pub struct Interpreter {
     stmts: Vec<Stmt>,
+    /// Fixed on the global execution context
+    globals : Rc<RefCell<Environment>>,
+    /// Tracks the current execution context
     env: Rc<RefCell<Environment>>,
     pub(crate) repl: bool,
     // index for repl mode
@@ -30,8 +35,15 @@ pub trait Memory {
 
 impl Interpreter {
     pub fn new(mut p: Parser) -> Self {
+        let global_env = Rc::new(RefCell::new(Environment::default()));
+        global_env.define("clock", Value::Function(Rc::new(LoxFunction {
+            stack_env: Rc::clone(&global_env),
+            arity: 0,
+        }) as Rc<dyn LoxCallable>));
         Self {
             stmts: p.parse(),
+            globals : Rc::clone(&global_env),
+            env : global_env,
             ..Default::default()
         }
     }
@@ -181,6 +193,7 @@ impl Interpreter {
             } else {
                 Ok(Value::Break)
             },
+            Stmt::FunDecl => todo!(),
         }
         // Ok(Value::Nil)
     }
@@ -240,6 +253,7 @@ impl Interpreter {
                 Stmt::Break => {
                     Err(EvalError::BreakWithout)
                 },
+                Stmt::FunDecl => todo!(),
                 
             };
             match val {
