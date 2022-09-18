@@ -13,9 +13,11 @@ use colored::Colorize;
 use std::cell::RefCell;
 use std::rc::Rc;
 mod environment;
+mod native_fn;
+use native_fn::*;
 pub use environment::Environment;
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Interpreter {
     stmts: Vec<Stmt>,
     /// Fixed on the global execution context
@@ -27,6 +29,13 @@ pub struct Interpreter {
     previous: usize,
 }
 
+impl Default for Interpreter {
+    fn default() -> Self {
+        let global_env = Rc::new(RefCell::new(Environment::default()));
+        global_env.define("clock", Value::Function(Rc::new(Clock)));
+        Self { stmts: vec![], globals:Rc::clone(&global_env), env : global_env, repl: false, previous: 0 }
+    }
+}
 pub trait Memory {
     fn define(&self, name: &str, value: Value);
     fn get(&self, name: &Token) -> Result<Option<Value>, RuntimeError>;
@@ -36,10 +45,7 @@ pub trait Memory {
 impl Interpreter {
     pub fn new(mut p: Parser) -> Self {
         let global_env = Rc::new(RefCell::new(Environment::default()));
-        global_env.define("clock", Value::Function(Rc::new(LoxFunction {
-            stack_env: Rc::clone(&global_env),
-            arity: 0,
-        }) as Rc<dyn LoxCallable>));
+        global_env.define("clock", Value::Function(Rc::new(Clock)));
         Self {
             stmts: p.parse(),
             globals : Rc::clone(&global_env),
@@ -80,7 +86,7 @@ impl Interpreter {
             let loop_stmt = if matches!(stmt, Stmt::While { .. }) {
                 true
             } else { false };
-            match self.execute(stmt, Rc::clone(&sub_env), loop_stmt || inside_loop) {
+            match self.execute(&stmt, Rc::clone(&sub_env), loop_stmt || inside_loop) {
                 Ok(val) if matches!(val, Value::Break) => {
                     // Early return
                     return Ok(Value::Break);
@@ -111,7 +117,6 @@ impl Interpreter {
                     match **e {
                         crate::parser::expressions::Expression::Assignment(_)
                         | crate::parser::expressions::Expression::Variable(_) => {
-                            // println!("(EXECUTE)FOUND ASSIGNMENT OR VAR");
                             let _a = e.eval(&rc_env);
                             if _a.is_ok() && !self.repl { 
                                 Ok(Value::Nil) }
