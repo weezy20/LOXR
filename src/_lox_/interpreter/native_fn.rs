@@ -1,6 +1,8 @@
 use crate::parser::{error::EvalError, traits::lox_callable::LoxCallable, value::Value};
 use derive_more::Display;
 use std::{cell::RefCell, rc::Rc, time::{SystemTime, UNIX_EPOCH}};
+
+use super::Interpreter;
 #[derive(Debug, Display)]
 #[display(fmt = "<native fn: clock>")]
 pub struct Clock;
@@ -9,7 +11,7 @@ impl LoxCallable for Clock {
     fn call(
         &self,
         args: Vec<crate::parser::value::Value>,
-        _env: Rc<RefCell<super::Environment>>,
+        _interpreter: &mut Interpreter
     ) -> crate::parser::value::ValueResult {
         if args.len() != 0 {
             crate::Lox::report_runtime_err(format!(

@@ -614,7 +614,7 @@ impl Parser {
         if self.matches(&[IDENTIFIER]) {
             let ident = self.previous.take().expect("matches is infallible");
             Ok(Stmt::FunDecl { ident, params: self.params()?, body : if self.matches(&[LEFT_BRACE]) {
-                    Rc::new(self.block_statement()?)
+                    Box::new(self.block_statement()?)
                 }
                 else {
                     return Err(ParserError::InvalidFuncDecl);

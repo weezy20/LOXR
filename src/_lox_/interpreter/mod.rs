@@ -53,12 +53,12 @@ impl Interpreter {
             ..Default::default()
         }
     }
-    /// Extend stmts with parser `p` and also set Environment to `env`
+    /// Extend stmts with statements and also set Environment to `env`
     /// Currently used for tests only
-    pub fn extend_with_env(&mut self, mut p: Parser, env: Rc<RefCell<Environment>>) {
+    pub fn extend_with_env(&mut self, mut stmts: Vec<Stmt>, env: Rc<RefCell<Environment>>) {
         self.env = env;
         self.previous = self.stmts.len();
-        self.stmts.append(&mut p.parse());
+        self.stmts.append(&mut stmts);
         loc!(format!("Interpreter modified -> {self:?}"));
         self.interpret();
     }
@@ -75,8 +75,8 @@ impl Interpreter {
         // if self.is_repl_mode ? then for stmt in self.stmts[self.previous..].iter() { .. }
     }
     /// Execute a block of statements inside environment `sub_env`
-    fn execute_block(
-        &self,
+    pub fn execute_block(
+        &mut self,
         statements: &Vec<Stmt>,
         sub_env: Rc<RefCell<Environment>>,
         inside_loop: bool
@@ -105,7 +105,7 @@ impl Interpreter {
         Ok(Value::Nil)
     }
     /// Execute a statement inside a new environment `rc_env`
-    fn execute(&self, stmt: &Stmt, rc_env: Rc<RefCell<Environment>>, inside_loop: bool) -> ValueResult {
+    pub fn execute(&mut self, stmt: &Stmt, rc_env: Rc<RefCell<Environment>>, inside_loop: bool) -> ValueResult {
         // Create a new environment surrounded by rc_env
         let inside_env = RefCell::new(if inside_loop {
             Environment::loop_enclosed_by(Rc::clone(&rc_env))
@@ -117,15 +117,15 @@ impl Interpreter {
                     match **e {
                         crate::parser::expressions::Expression::Assignment(_)
                         | crate::parser::expressions::Expression::Variable(_) => {
-                            let _a = e.eval(&rc_env);
+                            let _a = e.eval(&rc_env, self);
                             if _a.is_ok() && !self.repl { 
                                 Ok(Value::Nil) }
                             else { _a }
                         },
-                        _ =>  e.eval(&rc_env)
+                        _ =>  e.eval(&rc_env, self)
                     }                                        
             }
-            Stmt::Print(x) => x.eval(&Rc::clone(&rc_env)),
+            Stmt::Print(x) => x.eval(&Rc::clone(&rc_env), self),
             Stmt::ErrStmt { message } => {
                 loc!();
                 eprintln!(
@@ -148,7 +148,7 @@ impl Interpreter {
             } => {
                 // println!(" Got a {_ifstmt}");
                 // Exec the condition in current env
-                let condition_value = condition.eval(&Rc::clone(&rc_env))?;
+                let condition_value = condition.eval(&Rc::clone(&rc_env),self)?;
                 // create a new environment
                 let if_else = Rc::new(inside_env);
                 let mut val = Value::Nil;
@@ -166,7 +166,7 @@ impl Interpreter {
                 // BUG : ASsertions fail when while is inside a scope
                 assert!(inside_loop);
                 assert!(loop_env.borrow().in_loop());
-                while condition.eval(&Rc::clone(&rc_env))?.is_truthy() {
+                while condition.eval(&Rc::clone(&rc_env),self)?.is_truthy() {
                     val = self.execute(&body.as_ref(), Rc::clone(&loop_env), true)?;
                     if matches!(val, Value::Break) {
                         return Ok(Default::default());
@@ -177,7 +177,7 @@ impl Interpreter {
             Stmt::VarDecl { name, initializer } => {
                 // let init_err : Option<EvalError> = None;
                 let val = if let Some(expr) = initializer {
-                    match expr.eval(&mut Rc::clone(&rc_env)) {
+                    match expr.eval(&mut Rc::clone(&rc_env),self) {
                         Ok(v) => v,
                         Err(eval_err) => {
                             loc!();
@@ -199,20 +199,28 @@ impl Interpreter {
                 Ok(Value::Break)
             },
             Stmt::FunDecl { ident, params, body } => {
-                let lox_fn = LoxFunction { stack_env: Rc::clone(&rc_env), ident: ident.to_owned(), arity: params.len(), body: Rc::clone(&body) };
+                let stack_env = Rc::new(inside_env);
+                let mut fn_params = vec![];
+                for param in params {
+                    if let Some(ident) = param.to_ident() {
+                        stack_env.define(ident, Value::Nil);
+                        fn_params.push(ident.to_owned());
+                    }
+                }
+                let lox_fn = LoxFunction { stack_env , ident: ident.to_owned(), arity: params.len(), body : body.clone(), params : fn_params};
                 rc_env.define(&ident.lexeme, Value::Function(Rc::new(lox_fn)));
                 println!("fn declared <{}>", ident.lexeme);
                 Ok(Value::Nil)
             },
         }
-        // Ok(Value::Nil)
     }
     pub fn interpret(&mut self) -> () {
-        for stmt in self.stmts[self.previous..].iter() {
+        let mut stmts = self.stmts.clone();
+        for stmt in stmts.iter_mut() {
             let val: ValueResult = match stmt {
                 // top level expr statements should be executed in global scope
                 expr_stmt @ Stmt::ExprStmt(_) => self.execute(expr_stmt, Rc::clone(&self.env), false),
-                    Stmt::Print(e) => e.eval(&Rc::clone(&self.env)),
+                    Stmt::Print(e) => e.eval(&Rc::clone(&self.env),self),
                     Stmt::ErrStmt { message } => {
                         loc!("Err stmt was printed");
                         eprintln!(
@@ -241,7 +249,7 @@ impl Interpreter {
                 Stmt::VarDecl { name, initializer } => {
                     // let init_err : Option<EvalError> = None;
                     let val = if let Some(expr) = initializer {
-                        match expr.eval(&mut Rc::clone(&self.env)) {
+                        match expr.eval(&Rc::clone(&self.env),self) {
                             Ok(v) => v,
                             Err(eval_err) => {
                                 loc!();

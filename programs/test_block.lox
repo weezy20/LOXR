@@ -1,5 +1,9 @@
 var a = 1;
 {
-  var a = a + 2;
-  print a;
+  var a = a + 2; // a = 1 from global scope, var a  = 3;
+  print "inside";
+  print a; 
 }
+
+print "outside";
+print a;

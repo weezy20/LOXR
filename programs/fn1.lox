@@ -1,6 +1,9 @@
-fun print_me(what) {
-    print "function <print_me> called";
-    print what;
+var global = 100;
+fun print_me(a,b,c) {
+    print "I was called at " + clock();
+    print "a = "+a;
+    print "b = "+b;
+    print "c = "+c;
+    print "global = "+global;
 }
-
-print_me(1);
+print_me(1,2,3);

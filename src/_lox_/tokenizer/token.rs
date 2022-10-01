@@ -51,6 +51,13 @@ impl Token {
             self.r#type, self.lexeme, line_beginning, self.col
         )
     }
+    /// Return Token as Identifier if possible
+    pub fn to_ident(&self) -> Option<&str> {
+        if self.r#type == TokenType::IDENTIFIER {
+            return Some(&self.lexeme);
+        }
+        None
+    }
 }
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

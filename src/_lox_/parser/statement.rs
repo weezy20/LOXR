@@ -10,7 +10,7 @@ pub enum Stmt {
     FunDecl {
         ident : Token, 
         params: Vec<Token>,
-        body : std::rc::Rc<Stmt>,
+        body : Box<Stmt>,
     },
     #[display(fmt = "VarDecl IDENTIFER : '{}', Expression : {:?}", name, initializer)]
     VarDecl {

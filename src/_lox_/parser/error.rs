@@ -67,8 +67,8 @@ pub enum EvalError {
     FunctionArgError,
     #[error("Error calling function at {}", _0)]
     FunctionCallError(String),
-    // #[error("Expected {} but found {} arguments", _0, _1)]
-    // ArityMismatch(usize, usize)
+    #[error("Expected {} but found {} arguments", _0, _1)]
+    ArityMismatch(usize, usize)
 }
 
 #[derive(Error, Debug, PartialEq)]

@@ -1,6 +1,6 @@
 #![feature(let_chains)]
 #![feature(box_syntax)]
-#![forbid(unsafe_code)]
+// #![forbid(unsafe_code)]
 //! This module contains all definitions for the Lox interpreter
 //! # Lox grammer:
 //! *program*          → `declaration`* EOF;

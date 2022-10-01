@@ -1,7 +1,8 @@
 use std::{borrow::Cow, cell::RefCell, rc::Rc};
 
 use super::error::EvalError;
-use crate::interpreter::Environment;
+use super::statement::Stmt;
+use crate::interpreter::{self, Environment, Interpreter, Memory};
 use crate::parser::traits::lox_callable::LoxCallable;
 use crate::tokenizer::token::Token;
 type LoxEnvironment = Rc<RefCell<Environment>>;
@@ -111,18 +112,30 @@ impl From<f64> for Value {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct LoxFunction {
+    /// Environment in which to execute function body
     pub stack_env: Rc<RefCell<Environment>>,
     /// Let's just consider every function to be identified by a token
     pub ident: Token,
     pub arity: usize,
     /// Always constructed to be a Stmt::Block
-    pub body: Rc<crate::parser::statement::Stmt>,
+    pub body: Box<Stmt>,
+    /// We need this as HashMaps don't preserve order in keys and we need
+    /// order to figure out correct instantiation of variables
+    pub params : Vec<String>,
 }
+
 /// Since LoxFunction is a special value that can be called, we express that through this trait
 impl LoxCallable for LoxFunction {
-    fn call(&self, args: Vec<Value>, env: Rc<RefCell<Environment>>) -> ValueResult {
-        // TODO: implement this
-        Ok(Value::Nil)
+    fn call(&self, args: Vec<Value>, interpreter: &mut Interpreter) -> ValueResult {
+        // println!("FUnction BoDy -> {}", self.body);
+        if args.len() != self.params.len() {
+            return Err(EvalError::ArityMismatch(self.params.len(), args.len()));
+        }
+        // let stack_env = self.stack_env.borrow_mut();
+        for (name, value) in self.params.iter().zip(args.into_iter()) {
+            self.stack_env.put(name, value);
+        }
+        interpreter.execute(&self.body, Rc::clone(&self.stack_env), false)
     }
     fn arity(&self) -> usize {
         self.arity

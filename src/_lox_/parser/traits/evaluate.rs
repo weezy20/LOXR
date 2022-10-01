@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::rc::Rc;
 
-use crate::interpreter::{Environment, Memory};
+use crate::interpreter::{self, Environment, Memory, Interpreter};
 use crate::parser::error::{EvalError, RuntimeError};
 use crate::parser::expressions::*;
 use crate::parser::traits::lox_callable::LoxCallable;
@@ -12,28 +12,36 @@ use crate::tokenizer::token_type::TokenType::*;
 use crate::{loc, Lox};
 pub trait Evaluate {
     type Environment: Memory;
-    fn eval(&self, env: &Self::Environment) -> ValueResult;
+    fn eval(
+        &self,
+        env: &Self::Environment,
+        int: &mut interpreter::Interpreter,
+    ) -> ValueResult;
 }
 
 type LoxEnvironment = Rc<RefCell<Environment>>;
 
 impl Evaluate for Expression {
     type Environment = LoxEnvironment;
-    fn eval(&self, env: &Self::Environment) -> ValueResult {
+    fn eval(
+        &self,
+        env: &Self::Environment,
+        int: &mut interpreter::Interpreter,
+    ) -> ValueResult {
         match self {
             Expression::CommaExpr(expr_list) => {
                 // Comma expressions evaluate the list, discarding all results uptil the last one
                 expr_list.iter().enumerate().for_each(|(idx, item)| {
                     if idx != expr_list.len() - 1 {
                         // eval and discard
-                        match item.eval(env) {
+                        match item.eval(env, int) {
                             Ok(_x) => { /*println!("Evaluating {item:?} got -> {x:?}")*/ }
                             Err(e) => println!("Evaluating {item:?} got error -> {e:?}"),
                         }
                     }
                 });
                 if let Some(last) = expr_list.last() {
-                    last.eval(env)
+                    last.eval(env, int)
                 } else {
                     Err(EvalError::InvalidExpr(
                         self.clone(),
@@ -41,14 +49,14 @@ impl Evaluate for Expression {
                     ))
                 }
             }
-            Expression::TernExpr(ternary) => ternary.eval(env),
-            Expression::BinExpr(bin_exp) => bin_exp.eval(env),
-            Expression::UnExpr(un_exp) => un_exp.eval(env),
-            Expression::Lit(literal) => literal.eval(env),
-            Expression::Group(group) => group.eval(env),
+            Expression::TernExpr(ternary) => ternary.eval(env,int),
+            Expression::BinExpr(bin_exp) => bin_exp.eval(env,int),
+            Expression::UnExpr(un_exp) => un_exp.eval(env,int),
+            Expression::Lit(literal) => literal.eval(env,int),
+            Expression::Group(group) => group.eval(env,int),
             // TODO: We need to interpret this separately in the Interpreter as
             // Only the Interpreter has access to Environment, for now we don't add it to Evaluate trait definition
-            Expression::Assignment(assignment_expr) => assignment_expr.eval(env),
+            Expression::Assignment(assignment_expr) => assignment_expr.eval(env,int),
             // For now let's throw an error on error production evaluations
             Expression::Error(_err) => Err(EvalError::ErrorProduction),
             // We include this because user may hit `a` and expect to see a value just like in python
@@ -74,8 +82,8 @@ impl Evaluate for Expression {
                     }
                 }
             }
-            Expression::LogicOr(l) => l.eval(env),
-            Expression::LogicAnd(l) => l.eval(env),
+            Expression::LogicOr(l) => l.eval(env,int),
+            Expression::LogicAnd(l) => l.eval(env,int),
             Expression::Call(
                 fncallexpr @ FnCallExpr {
                     callee,
@@ -90,34 +98,37 @@ impl Evaluate for Expression {
                 // to work correctly?
 
                 // For now, we stay consistent with our overall pattern and "eval" whatever the callee expression is
-                let evaluated_callee: Value = if let Expression::Variable(ident) = &**callee {
-                    let lox_fn = match env.get(&ident) {
-                        // Ok expects a LoxFunction to be defined at this ident key
-                        Ok(v) => {
-                            if let Some(x) = v {
-                                Ok(x.to_owned())
-                            } else {
-                                // Ok(None) means variable was found in storage, but not initialized therefore it's an error
-                                // to use it before initialization
-                                // Note: This cannot happen for functions as they are declared and defined at one go
-                                panic!("ICE: Functions cannot be declared but not defined");
+                let evaluated_callee: Value =
+                    if let Expression::Variable(ident) = &**callee {
+                        let lox_fn = match env.get(&ident) {
+                            // Ok expects a LoxFunction to be defined at this ident key
+                            Ok(v) => {
+                                if let Some(x) = v {
+                                    Ok(x.to_owned())
+                                } else {
+                                    // Ok(None) means variable was found in storage, but not initialized therefore it's an error
+                                    // to use it before initialization
+                                    // Note: This cannot happen for functions as they are declared and defined at one go
+                                    panic!(
+                                    "ICE: Functions cannot be declared but not defined"
+                                );
+                                }
                             }
-                        }
-                        // undefined
-                        Err(_err) => {
-                            loc!(format!("Error on function.eval() {_err}"));
-                            Err(EvalError::FunctionUndefined(RuntimeError::UndefinedFunc(
-                                ident.lexeme.clone(),
-                            )))
-                        }
+                            // undefined
+                            Err(_err) => {
+                                loc!(format!("Error on function.eval() {_err}"));
+                                Err(EvalError::FunctionUndefined(
+                                    RuntimeError::UndefinedFunc(ident.lexeme.clone()),
+                                ))
+                            }
+                        };
+                        lox_fn?
+                    } else {
+                        callee.eval(env,int)?
                     };
-                    lox_fn?
-                } else {
-                    callee.eval(env)?
-                };
                 let mut args_result: Vec<ValueResult> = vec![];
                 for arg in args.iter() {
-                    args_result.push(arg.eval(env));
+                    args_result.push(arg.eval(env,int));
                 }
                 if args_result.iter().any(|res| res.is_err()) {
                     return Err(EvalError::FunctionArgError);
@@ -136,7 +147,7 @@ impl Evaluate for Expression {
                         ));
                         return Err(EvalError::FunctionArgError);
                     }
-                    lox_fn.call(args, Rc::clone(&env))
+                    lox_fn.call(args, int)
                 } else {
                     return Err(EvalError::FunctionCallError(fncallexpr.location()));
                 }
@@ -149,25 +160,43 @@ impl Evaluate for Expression {
 // https://doc.rust-lang.org/reference/expressions/operator-expr.html#lazy-boolean-operators
 impl Evaluate for AndExpr {
     type Environment = LoxEnvironment;
-    fn eval(&self, env: &Self::Environment) -> ValueResult {
-        Ok((self.left.eval(env)?.is_truthy() && self.right.eval(env)?.is_truthy()).into())
+    fn eval(
+        &self,
+        env: &Self::Environment,
+        int: &mut interpreter::Interpreter,
+    ) -> ValueResult {
+        Ok(
+            (self.left.eval(env,int)?.is_truthy() && self.right.eval(env,int)?.is_truthy())
+                .into(),
+        )
     }
 }
 impl Evaluate for OrExpr {
     type Environment = LoxEnvironment;
 
-    fn eval(&self, env: &Self::Environment) -> ValueResult {
-        // Ok((self.left.eval(env)?.is_truthy() || panic!("cannot panic this if left true")).into())
-        Ok((self.left.eval(env)?.is_truthy() || self.right.eval(env)?.is_truthy()).into())
+    fn eval(
+        &self,
+        env: &Self::Environment,
+        int: &mut interpreter::Interpreter,
+    ) -> ValueResult {
+        // Ok((self.left.eval(env,int)?.is_truthy() || panic!("cannot panic this if left true")).into())
+        Ok(
+            (self.left.eval(env,int)?.is_truthy() || self.right.eval(env,int)?.is_truthy())
+                .into(),
+        )
     }
 }
 
 impl Evaluate for AssignmentExpr {
     type Environment = LoxEnvironment;
 
-    fn eval(&self, env: &Self::Environment) -> ValueResult {
+    fn eval(
+        &self,
+        env: &Self::Environment,
+        int: &mut interpreter::Interpreter,
+    ) -> ValueResult {
         let (name, right) = (&self.name.lexeme, &self.right);
-        let rval = right.eval(env)?;
+        let rval = right.eval(env,int)?;
         /*.map_err(|eval_err| {
             // Lox::report_runtime_err(format!("{eval_err}"));
             eval_err // Idempotent mapping lol
@@ -190,22 +219,30 @@ impl Evaluate for AssignmentExpr {
 impl Evaluate for TernaryExpr {
     type Environment = LoxEnvironment;
 
-    fn eval(&self, env: &Self::Environment) -> ValueResult {
+    fn eval(
+        &self,
+        env: &Self::Environment,
+        int: &mut interpreter::Interpreter,
+    ) -> ValueResult {
         // TernaryExpr { condition : Box<expr> , if_true : Box<expr>, if_false : Box<expr> }
-        let condition = self.condition.eval(env)?;
+        let condition = self.condition.eval(env,int)?;
         let condition = condition.is_truthy();
         let result = [&self.if_false, &self.if_true][condition as usize];
-        result.eval(env)
+        result.eval(env,int)
     }
 }
 
 impl Evaluate for BinaryExpr {
     type Environment = LoxEnvironment;
 
-    fn eval(&self, env: &Self::Environment) -> ValueResult {
+    fn eval(
+        &self,
+        env: &Self::Environment,
+        int: &mut interpreter::Interpreter,
+    ) -> ValueResult {
         let err_exp = Expression::BinExpr(self.clone());
-        let left = self.left.eval(env)?;
-        let right = self.right.eval(env)?;
+        let left = self.left.eval(env,int)?;
+        let right = self.right.eval(env,int)?;
         match self.operator.r#type {
             MINUS => {
                 if let Some((lval, rval)) = left.is_numeric().and_then(|lval| {
@@ -322,7 +359,9 @@ impl Evaluate for BinaryExpr {
                 )),
             },
             GREATER_EQUAL => match left.partial_cmp(&right) {
-                Some(o) => Ok(Value::from(o == Ordering::Greater || o == Ordering::Equal)),
+                Some(o) => {
+                    Ok(Value::from(o == Ordering::Greater || o == Ordering::Equal))
+                }
                 None => Err(EvalError::InvalidExpr(
                     err_exp,
                     Some(format!("Cannot compare {left:?} with {right:?}")),
@@ -364,8 +403,12 @@ impl Evaluate for BinaryExpr {
 impl Evaluate for UnaryExpr {
     type Environment = LoxEnvironment;
 
-    fn eval(&self, env: &Self::Environment) -> ValueResult {
-        let right = self.operand.eval(env)?;
+    fn eval(
+        &self,
+        env: &Self::Environment,
+        int: &mut interpreter::Interpreter,
+    ) -> ValueResult {
+        let right = self.operand.eval(env,int)?;
         let result = match self.operator.r#type {
             BANG => Value::Bool(!right.is_truthy()),
             MINUS => match right {
@@ -391,7 +434,7 @@ impl Evaluate for UnaryExpr {
 impl Evaluate for Literal {
     type Environment = LoxEnvironment;
 
-    fn eval(&self, _env: &Self::Environment) -> ValueResult {
+    fn eval(&self, _env: &Self::Environment, int: &mut Interpreter) -> ValueResult {
         match self.inner.r#type {
             STRING => Ok(self.inner.lexeme.clone().into()),
             NUMBER => {
@@ -411,7 +454,11 @@ impl Evaluate for Literal {
 impl Evaluate for Grouping {
     type Environment = LoxEnvironment;
 
-    fn eval(&self, env: &Self::Environment) -> ValueResult {
-        self.inner.eval(env)
+    fn eval(
+        &self,
+        env: &Self::Environment,
+        int: &mut interpreter::Interpreter,
+    ) -> ValueResult {
+        self.inner.eval(env,int)
     }
 }
