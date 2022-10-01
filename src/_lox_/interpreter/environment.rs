@@ -67,21 +67,21 @@ impl Memory for Rc<RefCell<Environment>> {
             Some(val) if *val == Value::Nil => Ok(None),
             Some(val) => Ok(Some(val.to_owned())),
             None => {
-                let current_env = Rc::clone(&self);
-                let current_env_ptr: *mut Environment = self.as_ptr();
+                let current_env: Rc<RefCell<Environment>> = Rc::clone(&self);
                 // We either find a value in enclosing scopes or none
                 // no clue why this is caught as unused assignment
                 // It was an unused assignment becz we never read the RHS ( = None )
                 let scoped_val: Option<Value>;
                 '_check_scopes: loop {
-                    if let Some(encl_env) = &unsafe { &*current_env_ptr }.enclosing {
+                    if let Some(ref encl_env) = current_env.borrow().enclosing {
                         if let Ok(Some(val)) = encl_env.get(&token) {
                             break scoped_val = Some(val);
                         } else if let Ok(None) = encl_env.get(&token) {
                             // Variable declared but has Nil initializer
                             break scoped_val = None;
                         } else {
-                            unsafe { std::ptr::swap(current_env_ptr, encl_env.as_ptr()) };
+                            // IF you get a panic for BorrowMut, it's unequivocably this line at fault
+                            current_env.swap(encl_env);
                             continue;
                         }
                     }
@@ -89,11 +89,11 @@ impl Memory for Rc<RefCell<Environment>> {
                     // Upto this we have not found the var declared
                     else {
                         assert!(
-                            &unsafe { &*current_env_ptr }.is_global,
+                            current_env.borrow().is_global,
                             "ICE: Current env expected to be global at this point"
                         );
-                        let global_env = unsafe { (*current_env_ptr).clone() };
-                        match global_env.values.get(&name) {
+                        let encl_borrow = current_env.borrow();
+                        match encl_borrow.values.get(&name) {
                             Some(val) if *val == Value::Nil => return Ok(None),
                             Some(val) => return Ok(Some(val.to_owned())),
                             None => {
