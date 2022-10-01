@@ -5,9 +5,8 @@ use std::rc::Rc;
 use crate::interpreter::{self, Environment, Memory, Interpreter};
 use crate::parser::error::{EvalError, RuntimeError};
 use crate::parser::expressions::*;
-use crate::parser::traits::lox_callable::LoxCallable;
 use crate::parser::value::ValueResult;
-use crate::parser::value::{LoxFunction, Value};
+use crate::parser::value::Value;
 use crate::tokenizer::token_type::TokenType::*;
 use crate::{loc, Lox};
 pub trait Evaluate {
@@ -434,7 +433,7 @@ impl Evaluate for UnaryExpr {
 impl Evaluate for Literal {
     type Environment = LoxEnvironment;
 
-    fn eval(&self, _env: &Self::Environment, int: &mut Interpreter) -> ValueResult {
+    fn eval(&self, _env: &Self::Environment, _int: &mut Interpreter) -> ValueResult {
         match self.inner.r#type {
             STRING => Ok(self.inner.lexeme.clone().into()),
             NUMBER => {

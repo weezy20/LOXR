@@ -1,7 +1,4 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use crate::interpreter::{Environment, Interpreter};
+use crate::interpreter::Interpreter;
 use crate::parser::value::{Value, ValueResult};
 
 /// Some type that can be called like classes or functions

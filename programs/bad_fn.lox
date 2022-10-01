@@ -1,0 +1,7 @@
+for (var a = 1; a < 10 ; a = a+1) {
+    fun bad() {
+        break; // Should fail
+    }
+    bad();
+    break;
+}

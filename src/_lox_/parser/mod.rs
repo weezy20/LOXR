@@ -72,7 +72,6 @@ use crate::tokenizer::token_type::TokenType::{self, *};
 use crate::loc;
 use better_peekable::{BPeekable, BetterPeekable};
 use expressions::Expression;
-use std::rc::Rc;
 use std::vec::IntoIter;
 use self::error::ParserError;
 use self::statement::Stmt;
@@ -627,6 +626,9 @@ impl Parser {
     fn params(&mut self) -> Result<Vec<Token>, ParserError> {
         let mut params = vec![];
         self.consume(LEFT_PAREN)?;
+        if self.matches(&[RIGHT_PAREN]) {
+            return Ok(Vec::new())
+        }
         loop {
             // We don't want a keyword as a fn param
             params.push(self.consume(IDENTIFIER)?.ok_or_else(|| ParserError::InvalidFuncDecl)?);

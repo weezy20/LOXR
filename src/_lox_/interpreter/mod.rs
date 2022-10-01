@@ -1,6 +1,5 @@
 use crate::loc;
 use crate::parser::error::{RuntimeError, EvalError};
-use crate::parser::traits::lox_callable::LoxCallable;
 use crate::parser::value::LoxFunction;
 use crate::parser::{
     statement::Stmt,
@@ -18,6 +17,7 @@ use native_fn::*;
 pub use environment::Environment;
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct Interpreter {
     stmts: Vec<Stmt>,
     /// Fixed on the global execution context

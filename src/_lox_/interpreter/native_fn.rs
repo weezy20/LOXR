@@ -1,6 +1,6 @@
 use crate::parser::{error::EvalError, traits::lox_callable::LoxCallable, value::Value};
 use derive_more::Display;
-use std::{cell::RefCell, rc::Rc, time::{SystemTime, UNIX_EPOCH}};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::Interpreter;
 #[derive(Debug, Display)]
